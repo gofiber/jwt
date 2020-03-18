@@ -59,14 +59,4 @@ curl --location --request GET 'http://localhost:3000/auth' \
 ```
 
 ### Additional
-JWT Middleware use locales so that in the `c.Next()` we can get values from the `Model.User`
-```go
-
-func main() {
-    // ...
-    app.Get("/auth", func(c *fiber.Ctx) {
-    	c.Send(fmt.Sprintf(`Hello User! With %s id`), c.Locales("user"))
-    })
-    // ... 
-}
-```
+Fiber JWT middleware [example project](https://github.com/raymayemir/fiber-jwt-example) 

@@ -101,8 +101,7 @@ func New(config ...Config) func(*fiber.Ctx) {
 						cfg.Unauthorized(c)
 						return
 					}
-					// Add to locals
-					c.Locals("user", tk.User)
+
 					c.Next()
 					return
 				}

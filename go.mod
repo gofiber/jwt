@@ -1,4 +1,4 @@
-module github.com/raymayemir/jwt
+module github.com/gofiber/jwt
 
 go 1.11
 

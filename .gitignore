@@ -6,3 +6,5 @@
 *.ntvs*
 *.njsproj
 *.sln
+
+go.sum

@@ -93,7 +93,7 @@ func New(config ...Config) func(*fiber.Ctx) {
 					return []byte(cfg.TokenPassword), nil
 				})
 
-				if err != nil { // Malformed token, returns with http code 403 as usual @todo
+				if err != nil { // Malformed token
 					cfg.Unauthorized(c)
 					return
 				} else {

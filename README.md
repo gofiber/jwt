@@ -88,9 +88,7 @@ func login(c *fiber.Ctx) {
     return
   }
 
-  return c.JSON(fiber.Map{
-    "token": t,
-  })
+  c.JSON(fiber.Map{"token": t})
 }
 
 func accessible(c *fiber.Ctx) {

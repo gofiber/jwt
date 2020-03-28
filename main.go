@@ -105,7 +105,7 @@ func New(config ...Config) func(*fiber.Ctx) {
 		cfg.Claims = jwt.MapClaims{}
 	}
 	if cfg.TokenLookup == "" {
-		cfg.TokenLookup = "header" + fiber.HeaderAuthorization
+		cfg.TokenLookup = "header:" + fiber.HeaderAuthorization
 	}
 	if cfg.AuthScheme == "" {
 		cfg.AuthScheme = "Bearer"

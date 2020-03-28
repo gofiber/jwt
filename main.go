@@ -12,8 +12,8 @@ import (
 	"reflect"
 	"strings"
 
-	".././fiber"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofiber/fiber"
 )
 
 // Config defines the config for BasicAuth middleware

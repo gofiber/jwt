@@ -106,7 +106,7 @@ func restricted(c *fiber.Ctx) {
 ### Test
 _Login using username and password to retrieve a token._
 ```
-curl -X POST -d 'user=john' -d 'pass=doe' localhost:3000/login
+curl --data "user=john&pass=doe" http://localhost:3000/login
 ```
 _Response_
 ```json

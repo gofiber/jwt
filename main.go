@@ -168,7 +168,7 @@ func New(config ...Config) func(*fiber.Ctx) {
 	}
 }
 
-// jwtFromHeader returns a `jwtExtractor` that extracts token from the request header.
+// jwtFromHeader returns a function that extracts token from the request header.
 func jwtFromHeader(header string, authScheme string) func(c *fiber.Ctx) (string, error) {
 	return func(c *fiber.Ctx) (string, error) {
 		auth := c.Get(header)
@@ -180,7 +180,7 @@ func jwtFromHeader(header string, authScheme string) func(c *fiber.Ctx) (string,
 	}
 }
 
-// jwtFromQuery returns a `jwtExtractor` that extracts token from the query string.
+// jwtFromQuery returns a function that extracts token from the query string.
 func jwtFromQuery(param string) func(c *fiber.Ctx) (string, error) {
 	return func(c *fiber.Ctx) (string, error) {
 		token := c.Query(param)
@@ -191,7 +191,7 @@ func jwtFromQuery(param string) func(c *fiber.Ctx) (string, error) {
 	}
 }
 
-// jwtFromParam returns a `jwtExtractor` that extracts token from the url param string.
+// jwtFromParam returns a function that extracts token from the url param string.
 func jwtFromParam(param string) func(c *fiber.Ctx) (string, error) {
 	return func(c *fiber.Ctx) (string, error) {
 		token := c.Params(param)
@@ -202,7 +202,7 @@ func jwtFromParam(param string) func(c *fiber.Ctx) (string, error) {
 	}
 }
 
-// jwtFromCookie returns a `jwtExtractor` that extracts token from the named cookie.
+// jwtFromCookie returns a function that extracts token from the named cookie.
 func jwtFromCookie(name string) func(c *fiber.Ctx) (string, error) {
 	return func(c *fiber.Ctx) (string, error) {
 		token := c.Cookies(name)

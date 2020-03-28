@@ -26,7 +26,7 @@ jwt.New(config ...jwt.Config) func(*fiber.Ctx)
 | SigningMethod | `string` | Signing method, used to check token signing method. Possible values: `HS256`, `HS384`, `HS512`, `ES256`, `ES384`, `ES512` | `"HS256"` |
 | ContextKey | `string` | Context key to store user information from the token into context. | `"user"` |
 | Claims | `jwt.Claim` | Claims are extendable claims data defining token content. | `jwt.MapClaims{}` |
-| TokenLookup | `string` | TokenLookup is a string in the form of "<source>:<name>" that is used | `"header:Authorization"` |
+| TokenLookup | `string` | TokenLookup is a string in the form of `<source>:<name>` that is used | `"header:Authorization"` |
 | AuthScheme | `string` |AuthScheme to be used in the Authorization header. | `"Bearer"` |
 
 

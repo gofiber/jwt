@@ -35,64 +35,72 @@ jwt.New(config ...jwt.Config) func(*fiber.Ctx)
 package main
 
 import (
+  "github.com/dgrijalva/jwt-go"
+
   "github.com/gofiber/fiber"
   "github.com/gofiber/jwt"
-  "github.com/dgrijalva/jwt-go"
 )
 
 func main() {
   app := fiber.New()
 
   // Login route
-  app.Post("/login", func(c *fiber.Ctx) {
-    user := c.FormValue("user")
-    pass := c.FormValue("pass")
-
-    // Throws Unauthorized error
-    if user != "john" || pass != "doe" {
-      c.SendStatus(fiber.StatusUnauthorized)
-      return
-    }
-
-    // Create token
-    token := jwt.New(jwt.SigningMethodHS256)
-
-    // Set claims
-    claims := token.Claims.(jwt.MapClaims)
-    claims["name"] = "John Doe"
-    claims["admin"] = true
-    claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-
-    // Generate encoded token and send it as response.
-    t, err := token.SignedString([]byte("secret"))
-    if err != nil {
-      c.SendStatus(fiber.StatusInternalServerError)
-      return
-    }
-
-    return c.JSON(fiber.Map{
-      "token": t,
-    })
-  })
+  app.Post("/login", login)
 
   // Unauthenticated route
-  app.Get("/", func(c *fiber.Ctx) {
-    c.Send("Accessible")
-  })
+  app.Get("/", accessible)
 
   // JWT Middleware
   app.Use(jwt.New(jwt.Config{
     SigningKey: []byte("secret"),
   }))
+
   // Restricted Routes
-  app.Get("/restricted", func(c *fiber.Ctx) {
-    user := c.Locals("user").(*jwt.Token)
-    claims := user.Claims.(jwt.MapClaims)
-    name := claims["name"].(string)
-    c.Send("Welcome " + name)
-  })
+  app.Get("/restricted", restricted)
 
   app.Listen(3000)
+}
+
+func login(c *fiber.Ctx) {
+  user := c.FormValue("user")
+  pass := c.FormValue("pass")
+
+  // Throws Unauthorized error
+  if user != "john" || pass != "doe" {
+    c.SendStatus(fiber.StatusUnauthorized)
+    return
+  }
+
+  // Create token
+  token := jwt.New(jwt.SigningMethodHS256)
+
+  // Set claims
+  claims := token.Claims.(jwt.MapClaims)
+  claims["name"] = "John Doe"
+  claims["admin"] = true
+  claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+  // Generate encoded token and send it as response.
+  t, err := token.SignedString([]byte("secret"))
+  if err != nil {
+    c.SendStatus(fiber.StatusInternalServerError)
+    return
+  }
+
+  return c.JSON(fiber.Map{
+    "token": t,
+  })
+}
+
+func accessible(c *fiber.Ctx) {
+  c.Send("Accessible")
+}
+
+func restricted(c *fiber.Ctx) {
+  user := c.Locals("user").(*jwt.Token)
+  claims := user.Claims.(jwt.MapClaims)
+  name := claims["name"].(string)
+  c.Send("Welcome " + name)
 }
 ```
 

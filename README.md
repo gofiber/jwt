@@ -37,20 +37,83 @@ package main
 import (
   "github.com/gofiber/fiber"
   "github.com/gofiber/jwt"
+  "github.com/dgrijalva/jwt-go"
 )
 
 func main() {
   app := fiber.New()
 
+  // Login route
+  app.Post("/login", func(c *fiber.Ctx) {
+    user := c.FormValue("user")
+    pass := c.FormValue("pass")
+
+    // Throws Unauthorized error
+    if user != "john" || pass != "doe" {
+      c.SendStatus(fiber.StatusUnauthorized)
+      return
+    }
+
+    // Create token
+    token := jwt.New(jwt.SigningMethodHS256)
+
+    // Set claims
+    claims := token.Claims.(jwt.MapClaims)
+    claims["name"] = "John Doe"
+    claims["admin"] = true
+    claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+    // Generate encoded token and send it as response.
+    t, err := token.SignedString([]byte("secret"))
+    if err != nil {
+      c.SendStatus(fiber.StatusInternalServerError)
+      return
+    }
+
+    return c.JSON(fiber.Map{
+      "token": t,
+    })
+  })
+
+  // Unauthenticated route
+  app.Get("/", func(c *fiber.Ctx) {
+    c.Send("Accessible")
+  })
+
+  // JWT Middleware
   app.Use(jwt.New(jwt.Config{
     SigningKey: []byte("secret"),
-    TokenLookup: "query:token",
   }))
-
-  app.Get("/", func(c *fiber.Ctx) {
-    c.Send("Welcome!")
+  // Restricted Routes
+  app.Get("/restricted", func(c *fiber.Ctx) {
+    user := c.Locals("user").(*jwt.Token)
+    claims := user.Claims.(jwt.MapClaims)
+    name := claims["name"].(string)
+    c.Send("Welcome " + name)
   })
 
   app.Listen(3000)
 }
+```
+
+### Test
+_Login using username and password to retrieve a token._
+```
+curl -X POST -d 'user=john' -d 'pass=doe' localhost:3000/login
+```
+_Response_
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0NjE5NTcxMzZ9.RB3arc4-OyzASAaUhC2W3ReWaXAt_z2Fd3BN4aWTgEY"
+}
+```
+
+
+_Request a restricted resource using the token in Authorization request header._
+```
+curl localhost:3000/restricted -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0NjE5NTcxMzZ9.RB3arc4-OyzASAaUhC2W3ReWaXAt_z2Fd3BN4aWTgEY"
+```
+_Response_
+```
+Welcome John Doe
 ```

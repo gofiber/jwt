@@ -4,6 +4,8 @@ For valid token, it sets the user in Ctx.Locals and calls next handler.
 For invalid token, it returns "401 - Unauthorized" error.
 For missing token, it returns "400 - Bad Request" error.
 
+Special thanks and credits to [Echo](https://echo.labstack.com/middleware/jwt)
+
 ### Install
 ```
 go get -u github.com/gofiber/fiber

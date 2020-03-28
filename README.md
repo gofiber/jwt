@@ -39,7 +39,7 @@ import (
   "github.com/dgrijalva/jwt-go"
 
   "github.com/gofiber/fiber"
-  "github.com/gofiber/jwt"
+  fiberJWT "github.com/gofiber/jwt"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
   app.Get("/", accessible)
 
   // JWT Middleware
-  app.Use(jwt.New(jwt.Config{
+  app.Use(fiberJWT.New(fiberJWT.Config{
     SigningKey: []byte("secret"),
   }))
 

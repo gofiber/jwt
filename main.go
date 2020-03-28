@@ -149,7 +149,7 @@ func New(config ...Config) func(*fiber.Ctx) {
 			return
 		}
 		token := new(jwt.Token)
-		// Issue #647, #656
+
 		if _, ok := cfg.Claims.(jwt.MapClaims); ok {
 			token, err = jwt.Parse(auth, cfg.keyFunc)
 		} else {

@@ -8,6 +8,7 @@ For missing token, it returns "400 - Bad Request" error.
 ```
 go get -u github.com/gofiber/fiber
 go get -u github.com/gofiber/jwt
+go get -u github.com/dgrijalva/jwt-go
 ```
 
 ### Signature

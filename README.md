@@ -41,7 +41,7 @@ import (
   "github.com/dgrijalva/jwt-go"
 
   "github.com/gofiber/fiber"
-  jwtware "github.com/gofiber/jwt"
+  "github.com/gofiber/jwt" // jwtware
 )
 
 func main() {

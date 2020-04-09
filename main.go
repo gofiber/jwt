@@ -3,7 +3,7 @@
 // 📝 Github Repository: https://github.com/gofiber/fiber
 // Special thanks to Echo: https://github.com/labstack/echo/blob/master/middleware/jwt.go
 
-package jwt
+package jwtware
 
 import (
 	"errors"

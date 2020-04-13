@@ -2,4 +2,5 @@
 // 📌 API Documentation: https://fiber.wiki
 // 📝 Github Repository: https://github.com/gofiber/fiber
 
-package jwt
+//I was using it in my project but had this error: found packages jwtware (main.go) and jwt (main_test.go) 
+package jwtware

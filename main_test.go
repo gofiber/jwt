@@ -2,4 +2,4 @@
 // 📌 API Documentation: https://fiber.wiki
 // 📝 Github Repository: https://github.com/gofiber/fiber
 
-package jwt
+package jwtware

@@ -15,7 +15,7 @@ go get -u github.com/dgrijalva/jwt-go
 
 ### Signature
 ```go
-jwt.New(config ...jwt.Config) func(*fiber.Ctx)
+jwtware.New(config ...jwt.Config) func(*fiber.Ctx)
 ```
 
 ### Config

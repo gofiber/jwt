@@ -1,4 +1,9 @@
-### JSON Web Tokens
+# JSON Web Tokens
+
+![Test](https://github.com/gofiber/jwt/workflows/Test/badge.svg)
+![Security](https://github.com/gofiber/jwt/workflows/Security/badge.svg)
+![Linter](https://github.com/gofiber/jwt/workflows/Linter/badge.svg)
+
 JWT returns a JSON Web Token (JWT) auth middleware.
 For valid token, it sets the user in Ctx.Locals and calls next handler.
 For invalid token, it returns "401 - Unauthorized" error.

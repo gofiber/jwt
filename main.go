@@ -41,7 +41,7 @@ type Config struct {
 
 	// Signing method, used to check token signing method.
 	// Optional. Default: "HS256".
-	// Possible values: "HS256", "HS384", "HS512", "ES256", "ES384", "ES512"
+	// Possible values: "HS256", "HS384", "HS512", "ES256", "ES384", "ES512", "RS256", "RS384", "RS512"
 	SigningMethod string
 
 	// Context key to store user information from the token into context.

@@ -33,22 +33,23 @@ jwtware.New(config ...jwtware.Config) func(*fiber.Ctx)
 | ErrorHandler | `func(*fiber.Ctx, error)` | ErrorHandler defines a function which is executed for an invalid token. | `401 Invalid or expired JWT` |
 | SigningKey | `interface{}` | Signing key to validate token. Used as fallback if SigningKeys has length 0. | `nil` |
 | SigningKeys | `map[string]interface{}` | Map of signing keys to validate token with kid field usage. | `nil` |
-| SigningMethod | `string` | Signing method, used to check token signing method. Possible values: `HS256`, `HS384`, `HS512`, `ES256`, `ES384`, `ES512` | `"HS256"` |
+| SigningMethod | `string` | Signing method, used to check token signing method. Possible values: `HS256`, `HS384`, `HS512`, `ES256`, `ES384`, `ES512`, `RS256`, `RS384`, `RS512` | `"HS256"` |
 | ContextKey | `string` | Context key to store user information from the token into context. | `"user"` |
 | Claims | `jwt.Claim` | Claims are extendable claims data defining token content. | `jwt.MapClaims{}` |
 | TokenLookup | `string` | TokenLookup is a string in the form of `<source>:<name>` that is used | `"header:Authorization"` |
 | AuthScheme | `string` |AuthScheme to be used in the Authorization header. | `"Bearer"` |
 
 
-### Example
+### HS256 Example
 ```go
 package main
 
 import (
-  "github.com/dgrijalva/jwt-go"
+  "time"
 
+  "github.com/dgrijalva/jwt-go"
   "github.com/gofiber/fiber"
-  "github.com/gofiber/jwt" // jwtware
+  jwtware "github.com/gofiber/jwt"
 )
 
 func main() {
@@ -112,7 +113,7 @@ func restricted(c *fiber.Ctx) {
 }
 ```
 
-### Test
+### HS256 Test
 _Login using username and password to retrieve a token._
 ```
 curl --data "user=john&pass=doe" http://localhost:3000/login
@@ -133,3 +134,99 @@ _Response_
 ```
 Welcome John Doe
 ```
+
+### RS256 Example
+```go
+package main
+
+import (
+  "crypto/rand"
+  "crypto/rsa"
+  "log"
+  "time"
+
+  "github.com/dgrijalva/jwt-go"
+  "github.com/gofiber/fiber"
+  jwtware "github.com/gofiber/jwt"
+)
+
+var (
+  // Obviously, this is just a test example. Do not do this in production.
+  // In production, you would have the private key and public key pair generated
+  // in advance. NEVER add a private key to any GitHub repo.
+  privateKey *rsa.PrivateKey
+)
+
+func main() {
+  app := fiber.New()
+
+  // Just as a demo, generate a new private/public key pair on each run. See note above.
+  rng := rand.Reader
+  var err error
+  privateKey, err = rsa.GenerateKey(rng, 2048)
+  if err != nil {
+    log.Fatalf("rsa.GenerateKey: %v", err)
+  }
+
+  // Login route
+  app.Post("/login", login)
+
+  // Unauthenticated route
+  app.Get("/", accessible)
+
+  // JWT Middleware
+  app.Use(jwtware.New(jwtware.Config{
+    SigningMethod: "RS256",
+    SigningKey:    privateKey.Public(),
+  }))
+
+  // Restricted Routes
+  app.Get("/restricted", restricted)
+
+  app.Listen(3000)
+}
+
+func login(c *fiber.Ctx) {
+  user := c.FormValue("user")
+  pass := c.FormValue("pass")
+
+  // Throws Unauthorized error
+  if user != "john" || pass != "doe" {
+    c.SendStatus(fiber.StatusUnauthorized)
+    return
+  }
+
+  // Create token
+  token := jwt.New(jwt.SigningMethodRS256)
+
+  // Set claims
+  claims := token.Claims.(jwt.MapClaims)
+  claims["name"] = "John Doe"
+  claims["admin"] = true
+  claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+  // Generate encoded token and send it as response.
+  t, err := token.SignedString(privateKey)
+  if err != nil {
+    log.Printf("token.SignedString: %v", err)
+    c.SendStatus(fiber.StatusInternalServerError)
+    return
+  }
+
+  c.JSON(fiber.Map{"token": t})
+}
+
+func accessible(c *fiber.Ctx) {
+  c.Send("Accessible")
+}
+
+func restricted(c *fiber.Ctx) {
+  user := c.Locals("user").(*jwt.Token)
+  claims := user.Claims.(jwt.MapClaims)
+  name := claims["name"].(string)
+  c.Send("Welcome " + name)
+}
+```
+
+### RS256 Test
+The RS256 is actually identical to the HS256 test above.

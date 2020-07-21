@@ -129,7 +129,7 @@ func New(config ...Config) func(*fiber.Ctx) {
 	extractors := make([]func(c *fiber.Ctx) (string, error), 0)
 	rootParts := strings.Split(cfg.TokenLookup, ",")
 	for _, rootPart := range rootParts {
-		parts := strings.Split(rootPart, ":")
+		parts := strings.Split(strings.TrimSpace(rootPart), ":")
 
 		switch parts[0] {
 		case "header":

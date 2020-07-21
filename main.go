@@ -133,7 +133,7 @@ func New(config ...Config) func(*fiber.Ctx) {
 
 		switch parts[0] {
 		case "header":
-			extractors = append(extractors, jwtFromHeader("Authorization", cfg.AuthScheme))
+			extractors = append(extractors, jwtFromHeader(parts[1], cfg.AuthScheme))
 		case "query":
 			extractors = append(extractors, jwtFromQuery(parts[1]))
 		case "param":

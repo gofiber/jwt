@@ -126,15 +126,21 @@ func New(config ...Config) func(*fiber.Ctx) {
 		return cfg.SigningKey, nil
 	}
 	// Initialize
-	parts := strings.Split(cfg.TokenLookup, ":")
-	extractor := jwtFromHeader(parts[1], cfg.AuthScheme)
-	switch parts[0] {
-	case "query":
-		extractor = jwtFromQuery(parts[1])
-	case "param":
-		extractor = jwtFromParam(parts[1])
-	case "cookie":
-		extractor = jwtFromCookie(parts[1])
+	extractors := make([]func(c *fiber.Ctx) (string, error), 0)
+	rootParts := strings.Split(cfg.TokenLookup, ",")
+	for _, rootPart := range rootParts {
+		parts := strings.Split(strings.TrimSpace(rootPart), ":")
+
+		switch parts[0] {
+		case "header":
+			extractors = append(extractors, jwtFromHeader(parts[1], cfg.AuthScheme))
+		case "query":
+			extractors = append(extractors, jwtFromQuery(parts[1]))
+		case "param":
+			extractors = append(extractors, jwtFromParam(parts[1]))
+		case "cookie":
+			extractors = append(extractors, jwtFromCookie(parts[1]))
+		}
 	}
 	// Return middleware handler
 	return func(c *fiber.Ctx) {
@@ -143,7 +149,16 @@ func New(config ...Config) func(*fiber.Ctx) {
 			c.Next()
 			return
 		}
-		auth, err := extractor(c)
+		var auth string
+		var err error
+
+		for _, extractor := range extractors {
+			auth, err = extractor(c)
+			if auth != "" && err == nil {
+				break
+			}
+		}
+
 		if err != nil {
 			cfg.ErrorHandler(c, err)
 			return

@@ -1,7 +1,7 @@
 # JSON Web Tokens
 
 ![Release](https://img.shields.io/github/release/gofiber/jwt.svg)
-[![Discord](https://img.shields.io/badge/discord-join%20channel-7289DA)](https://gofiber.io/discord)
+[![Discord](https://img.shields.io/badge/discord-join%20channel-7289DA](https://gofiber.io/discord)
 ![Test](https://github.com/gofiber/jwt/workflows/Test/badge.svg)
 ![Security](https://github.com/gofiber/jwt/workflows/Security/badge.svg)
 ![Linter](https://github.com/gofiber/jwt/workflows/Linter/badge.svg)
@@ -15,8 +15,8 @@ Special thanks and credits to [Echo](https://echo.labstack.com/middleware/jwt)
 
 ### Install
 ```
-go get -u github.com/gofiber/fiber
-go get -u github.com/gofiber/jwt
+go get -u github.com/gofiber/fiber/v2
+go get -u github.com/gofiber/jwt/v2
 go get -u github.com/dgrijalva/jwt-go
 ```
 
@@ -45,70 +45,72 @@ jwtware.New(config ...jwtware.Config) func(*fiber.Ctx) error
 package main
 
 import (
-  "time"
+	"time"
 
-  "github.com/dgrijalva/jwt-go"
-  "github.com/gofiber/fiber"
-  jwtware "github.com/gofiber/jwt"
+	"github.com/gofiber/fiber/v2"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	jwtware "github.com/gofiber/jwt/v2"
 )
 
 func main() {
-  app := fiber.New()
+	app := fiber.New()
 
-  // Login route
-  app.Post("/login", login)
+	// Login route
+	app.Post("/login", login)
 
-  // Unauthenticated route
-  app.Get("/", accessible)
+	// Unauthenticated route
+	app.Get("/", accessible)
 
-  // JWT Middleware
-  app.Use(jwtware.New(jwtware.Config{
-    SigningKey: []byte("secret"),
-  }))
+	// JWT Middleware
+	app.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte("secret"),
+	}))
 
-  // Restricted Routes
-  app.Get("/restricted", restricted)
+	// Restricted Routes
+	app.Get("/restricted", restricted)
 
-  app.Listen(":3000")
+	app.Listen(":3000")
 }
 
 func login(c *fiber.Ctx) error {
-  user := c.FormValue("user")
-  pass := c.FormValue("pass")
+	user := c.FormValue("user")
+	pass := c.FormValue("pass")
 
-  // Throws Unauthorized error
-  if user != "john" || pass != "doe" {
-    return c.SendStatus(fiber.StatusUnauthorized)
-  }
+	// Throws Unauthorized error
+	if user != "john" || pass != "doe" {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
 
-  // Create token
-  token := jwt.New(jwt.SigningMethodHS256)
+	// Create token
+	token := jwt.New(jwt.SigningMethodHS256)
 
-  // Set claims
-  claims := token.Claims.(jwt.MapClaims)
-  claims["name"] = "John Doe"
-  claims["admin"] = true
-  claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+	// Set claims
+	claims := token.Claims.(jwt.MapClaims)
+	claims["name"] = "John Doe"
+	claims["admin"] = true
+	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
 
-  // Generate encoded token and send it as response.
-  t, err := token.SignedString([]byte("secret"))
-  if err != nil {
-    return c.SendStatus(fiber.StatusInternalServerError)
-  }
+	// Generate encoded token and send it as response.
+	t, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 
-  return c.JSON(fiber.Map{"token": t})
+	return c.JSON(fiber.Map{"token": t})
 }
 
 func accessible(c *fiber.Ctx) error {
-  return c.Send("Accessible")
+	return c.SendString("Accessible")
 }
 
 func restricted(c *fiber.Ctx) error {
-  user := c.Locals("user").(*jwt.Token)
-  claims := user.Claims.(jwt.MapClaims)
-  name := claims["name"].(string)
-  return c.Send("Welcome " + name)
+	user := c.Locals("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	name := claims["name"].(string)
+	return c.SendString("Welcome " + name)
 }
+
 ```
 
 ### HS256 Test
@@ -138,90 +140,92 @@ Welcome John Doe
 package main
 
 import (
-  "crypto/rand"
-  "crypto/rsa"
-  "log"
-  "time"
+	"crypto/rand"
+	"crypto/rsa"
+	"log"
+	"time"
 
-  "github.com/dgrijalva/jwt-go"
-  "github.com/gofiber/fiber"
-  jwtware "github.com/gofiber/jwt"
+	"github.com/gofiber/fiber/v2"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	jwtware "github.com/gofiber/jwt/v2"
 )
 
 var (
-  // Obviously, this is just a test example. Do not do this in production.
-  // In production, you would have the private key and public key pair generated
-  // in advance. NEVER add a private key to any GitHub repo.
-  privateKey *rsa.PrivateKey
+	// Obviously, this is just a test example. Do not do this in production.
+	// In production, you would have the private key and public key pair generated
+	// in advance. NEVER add a private key to any GitHub repo.
+	privateKey *rsa.PrivateKey
 )
 
 func main() {
-  app := fiber.New()
+	app := fiber.New()
 
-  // Just as a demo, generate a new private/public key pair on each run. See note above.
-  rng := rand.Reader
-  var err error
-  privateKey, err = rsa.GenerateKey(rng, 2048)
-  if err != nil {
-    log.Fatalf("rsa.GenerateKey: %v", err)
-  }
+	// Just as a demo, generate a new private/public key pair on each run. See note above.
+	rng := rand.Reader
+	var err error
+	privateKey, err = rsa.GenerateKey(rng, 2048)
+	if err != nil {
+		log.Fatalf("rsa.GenerateKey: %v", err)
+	}
 
-  // Login route
-  app.Post("/login", login)
+	// Login route
+	app.Post("/login", login)
 
-  // Unauthenticated route
-  app.Get("/", accessible)
+	// Unauthenticated route
+	app.Get("/", accessible)
 
-  // JWT Middleware
-  app.Use(jwtware.New(jwtware.Config{
-    SigningMethod: "RS256",
-    SigningKey:    privateKey.Public(),
-  }))
+	// JWT Middleware
+	app.Use(jwtware.New(jwtware.Config{
+		SigningMethod: "RS256",
+		SigningKey:    privateKey.Public(),
+	}))
 
-  // Restricted Routes
-  app.Get("/restricted", restricted)
+	// Restricted Routes
+	app.Get("/restricted", restricted)
 
-  app.Listen(":3000")
+	app.Listen(":3000")
 }
 
 func login(c *fiber.Ctx) error {
-  user := c.FormValue("user")
-  pass := c.FormValue("pass")
+	user := c.FormValue("user")
+	pass := c.FormValue("pass")
 
-  // Throws Unauthorized error
-  if user != "john" || pass != "doe" {
-    return c.SendStatus(fiber.StatusUnauthorized)
-  }
+	// Throws Unauthorized error
+	if user != "john" || pass != "doe" {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
 
-  // Create token
-  token := jwt.New(jwt.SigningMethodRS256)
+	// Create token
+	token := jwt.New(jwt.SigningMethodRS256)
 
-  // Set claims
-  claims := token.Claims.(jwt.MapClaims)
-  claims["name"] = "John Doe"
-  claims["admin"] = true
-  claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+	// Set claims
+	claims := token.Claims.(jwt.MapClaims)
+	claims["name"] = "John Doe"
+	claims["admin"] = true
+	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
 
-  // Generate encoded token and send it as response.
-  t, err := token.SignedString(privateKey)
-  if err != nil {
-    log.Printf("token.SignedString: %v", err)
-    return c.SendStatus(fiber.StatusInternalServerError)
-  }
+	// Generate encoded token and send it as response.
+	t, err := token.SignedString(privateKey)
+	if err != nil {
+		log.Printf("token.SignedString: %v", err)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 
-  return c.JSON(fiber.Map{"token": t})
+	return c.JSON(fiber.Map{"token": t})
 }
 
 func accessible(c *fiber.Ctx) error {
-  return c.Send("Accessible")
+	return c.SendString("Accessible")
 }
 
 func restricted(c *fiber.Ctx) error {
-  user := c.Locals("user").(*jwt.Token)
-  claims := user.Claims.(jwt.MapClaims)
-  name := claims["name"].(string)
-  return c.Send("Welcome " + name)
+	user := c.Locals("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	name := claims["name"].(string)
+	return c.SendString("Welcome " + name)
 }
+
 ```
 
 ### RS256 Test

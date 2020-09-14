@@ -8,7 +8,6 @@ package jwtware
 import (
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
@@ -24,12 +23,12 @@ type Config struct {
 
 	// SuccessHandler defines a function which is executed for a valid token.
 	// Optional. Default: nil
-	SuccessHandler func(*fiber.Ctx) error
+	SuccessHandler fiber.Handler
 
 	// ErrorHandler defines a function which is executed for an invalid token.
 	// It may be used to define a custom JWT error.
 	// Optional. Default: 401 Invalid or expired JWT
-	ErrorHandler func(*fiber.Ctx, error) error
+	ErrorHandler fiber.ErrorHandler
 
 	// Signing key to validate token. Used as fallback if SigningKeys has length 0.
 	// Required. This or SigningKeys.
@@ -70,7 +69,7 @@ type Config struct {
 }
 
 // New ...
-func New(config ...Config) func(*fiber.Ctx) error {
+func New(config ...Config) fiber.Handler {
 	// Init config
 	var cfg Config
 	if len(config) > 0 {
@@ -84,16 +83,14 @@ func New(config ...Config) func(*fiber.Ctx) error {
 	if cfg.ErrorHandler == nil {
 		cfg.ErrorHandler = func(c *fiber.Ctx, err error) error {
 			if err.Error() == "Missing or malformed JWT" {
-				c.Status(fiber.StatusBadRequest)
-				return c.SendString("Missing or malformed JWT")
+				return c.Status(fiber.StatusBadRequest).SendString("Missing or malformed JWT")
 			} else {
-				c.Status(fiber.StatusUnauthorized)
-				return c.SendString("Invalid or expired JWT")
+				return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
 			}
 		}
 	}
 	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 {
-		log.Fatal("Fiber: JWT middleware requires signing key")
+		panic("Fiber: JWT middleware requires signing key")
 	}
 	if cfg.SigningMethod == "" {
 		cfg.SigningMethod = "HS256"

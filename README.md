@@ -14,6 +14,9 @@ For missing token, it returns "400 - Bad Request" error.
 Special thanks and credits to [Echo](https://echo.labstack.com/middleware/jwt)
 
 ### Install
+
+This middleware supports Fiber v1 & v2, install accordingly.
+
 ```
 go get -u github.com/gofiber/fiber/v2
 go get -u github.com/gofiber/jwt/v2

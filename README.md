@@ -22,7 +22,7 @@ go get -u github.com/dgrijalva/jwt-go
 
 ### Signature
 ```go
-jwtware.New(config ...jwtware.Config) func(*fiber.Ctx)
+jwtware.New(config ...jwtware.Config) func(*fiber.Ctx) error
 ```
 
 ### Config
@@ -69,17 +69,16 @@ func main() {
   // Restricted Routes
   app.Get("/restricted", restricted)
 
-  app.Listen(3000)
+  app.Listen(":3000")
 }
 
-func login(c *fiber.Ctx) {
+func login(c *fiber.Ctx) error {
   user := c.FormValue("user")
   pass := c.FormValue("pass")
 
   // Throws Unauthorized error
   if user != "john" || pass != "doe" {
-    c.SendStatus(fiber.StatusUnauthorized)
-    return
+    return c.SendStatus(fiber.StatusUnauthorized)
   }
 
   // Create token
@@ -94,22 +93,21 @@ func login(c *fiber.Ctx) {
   // Generate encoded token and send it as response.
   t, err := token.SignedString([]byte("secret"))
   if err != nil {
-    c.SendStatus(fiber.StatusInternalServerError)
-    return
+    return c.SendStatus(fiber.StatusInternalServerError)
   }
 
-  c.JSON(fiber.Map{"token": t})
+  return c.JSON(fiber.Map{"token": t})
 }
 
-func accessible(c *fiber.Ctx) {
-  c.Send("Accessible")
+func accessible(c *fiber.Ctx) error {
+  return c.Send("Accessible")
 }
 
-func restricted(c *fiber.Ctx) {
+func restricted(c *fiber.Ctx) error {
   user := c.Locals("user").(*jwt.Token)
   claims := user.Claims.(jwt.MapClaims)
   name := claims["name"].(string)
-  c.Send("Welcome " + name)
+  return c.Send("Welcome " + name)
 }
 ```
 
@@ -183,17 +181,16 @@ func main() {
   // Restricted Routes
   app.Get("/restricted", restricted)
 
-  app.Listen(3000)
+  app.Listen(":3000")
 }
 
-func login(c *fiber.Ctx) {
+func login(c *fiber.Ctx) error {
   user := c.FormValue("user")
   pass := c.FormValue("pass")
 
   // Throws Unauthorized error
   if user != "john" || pass != "doe" {
-    c.SendStatus(fiber.StatusUnauthorized)
-    return
+    return c.SendStatus(fiber.StatusUnauthorized)
   }
 
   // Create token
@@ -209,22 +206,21 @@ func login(c *fiber.Ctx) {
   t, err := token.SignedString(privateKey)
   if err != nil {
     log.Printf("token.SignedString: %v", err)
-    c.SendStatus(fiber.StatusInternalServerError)
-    return
+    return c.SendStatus(fiber.StatusInternalServerError)
   }
 
-  c.JSON(fiber.Map{"token": t})
+  return c.JSON(fiber.Map{"token": t})
 }
 
-func accessible(c *fiber.Ctx) {
-  c.Send("Accessible")
+func accessible(c *fiber.Ctx) error {
+  return c.Send("Accessible")
 }
 
-func restricted(c *fiber.Ctx) {
+func restricted(c *fiber.Ctx) error {
   user := c.Locals("user").(*jwt.Token)
   claims := user.Claims.(jwt.MapClaims)
   name := claims["name"].(string)
-  c.Send("Welcome " + name)
+  return c.Send("Welcome " + name)
 }
 ```
 

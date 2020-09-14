@@ -1,7 +1,7 @@
 # JSON Web Tokens
 
 ![Release](https://img.shields.io/github/release/gofiber/jwt.svg)
-[![Discord](https://img.shields.io/badge/discord-join%20channel-7289DA](https://gofiber.io/discord)
+[![Discord](https://img.shields.io/badge/discord-join%20channel-7289DA)](https://gofiber.io/discord)
 ![Test](https://github.com/gofiber/jwt/workflows/Test/badge.svg)
 ![Security](https://github.com/gofiber/jwt/workflows/Security/badge.svg)
 ![Linter](https://github.com/gofiber/jwt/workflows/Linter/badge.svg)

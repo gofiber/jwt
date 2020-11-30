@@ -32,8 +32,8 @@ jwtware.New(config ...jwtware.Config) func(*fiber.Ctx) error
 | Property | Type | Description | Default |
 | :--- | :--- | :--- | :--- |
 | Filter | `func(*Ctx) bool` | Defines a function to skip middleware | `nil` |
-| SuccessHandler | `func(*fiber.Ctx)` |  SuccessHandler defines a function which is executed for a valid token. | `nil` |
-| ErrorHandler | `func(*fiber.Ctx, error)` | ErrorHandler defines a function which is executed for an invalid token. | `401 Invalid or expired JWT` |
+| SuccessHandler | `func(*fiber.Ctx) error` |  SuccessHandler defines a function which is executed for a valid token. | `nil` |
+| ErrorHandler | `func(*fiber.Ctx, error) error` | ErrorHandler defines a function which is executed for an invalid token. | `401 Invalid or expired JWT` |
 | SigningKey | `interface{}` | Signing key to validate token. Used as fallback if SigningKeys has length 0. | `nil` |
 | SigningKeys | `map[string]interface{}` | Map of signing keys to validate token with kid field usage. | `nil` |
 | SigningMethod | `string` | Signing method, used to check token signing method. Possible values: `HS256`, `HS384`, `HS512`, `ES256`, `ES384`, `ES512`, `RS256`, `RS384`, `RS512` | `"HS256"` |

@@ -181,7 +181,7 @@ func jwtFromHeader(header string, authScheme string) func(c *fiber.Ctx) (string,
 	return func(c *fiber.Ctx) (string, error) {
 		auth := c.Get(header)
 		l := len(authScheme)
-		if len(auth) > l+1 && auth[:l] == authScheme {
+		if len(auth) > l+1 && strings.EqualFold(auth[:l], authScheme) {
 			return auth[l+1:], nil
 		}
 		return "", errors.New("Missing or malformed JWT")

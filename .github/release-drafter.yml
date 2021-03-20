@@ -32,16 +32,16 @@ version-resolver:
     default: patch
 template: |
     🔥&nbsp;&nbsp;**New**
-    - ***
+    - text
 
     🧹&nbsp;&nbsp;**Updates**
-    - ****
+    - text
 
     🩹&nbsp;&nbsp;**Fixes**
-    - ***
+    - text
 
     📚&nbsp;&nbsp;**Documentation**
-    - ***
+    - text
 
     ## Changes
     $CHANGES

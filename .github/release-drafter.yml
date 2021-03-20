@@ -17,7 +17,7 @@ categories:
           - 'bug'
     - title: '📚 Documentation'
       label: '📒 Documentation'
-change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-template: '- $TITLE (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
     major:
@@ -31,6 +31,19 @@ version-resolver:
             - 'patch'
     default: patch
 template: |
+    🔥&nbsp;&nbsp;**New**
+    - ***
+
+    🧹&nbsp;&nbsp;**Updates**
+    - ****
+
+    🩹&nbsp;&nbsp;**Fixes**
+    - ***
+
+    📚&nbsp;&nbsp;**Documentation**
+    - ***
+
+    ## Changes
     $CHANGES
 
     Thank you $CONTRIBUTORS for making this update possible.

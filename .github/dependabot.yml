@@ -5,7 +5,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/" # Location of package manifests
     default_labels:
-        - "🤖 dependencies"
+        - "🤖 Dependencies"
     schedule:
         interval: "daily"
     automerged_updates:

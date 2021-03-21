@@ -4,5 +4,10 @@ version: 2
 updates:
   - package-ecosystem: "gomod"
     directory: "/" # Location of package manifests
+    default_labels:
+        - "🤖 dependencies"
     schedule:
-      interval: "daily"
+        interval: "daily"
+    automerged_updates:
+        -   match:
+                dependency_name: "gofiber/fiber/*"

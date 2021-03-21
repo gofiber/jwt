@@ -43,7 +43,7 @@ autolabeler:
     - label: '🧹 Updates'
       title:
           - '/(improve|update|refactor|⚡|🧹)/i'
-    - label: '🤖 dependencies'
+    - label: '🤖 Dependencies'
       title:
           - '/(bumb)/i'
     - label: '✏️ Feature'

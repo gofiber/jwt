@@ -17,6 +17,9 @@ categories:
 change-template: '- $TITLE (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
+    major:
+        labels:
+            - 'major'
     minor:
         labels:
             - 'minor'
@@ -26,33 +29,46 @@ version-resolver:
             - 'patch'
             - '📒 Documentation'
             - '☢️ Bug'
-            - '🤖 dependencies'
+            - '🤖 Dependencies'
             - '🧹 Updates'
     default: patch
 autolabeler:
     - label: '📒 Documentation'
-      files:
-          - '*.md'
       title:
-          - '/(doc(s|:)|README|typos|comment|📚)/i'
+          - '/docs/i'
+          - '/doc:/i'
+          - '/\[doc\]/i'
+          - '/README/i'
+          - '/typos/i'
+          - '/comment/i'
+          - '/📚/i'
     - label: '☢️ Bug'
       branch:
           - '/fix\/.+/'
       title:
-          - '/(fix|race|bug|🐛)/i'
+          - '/fix/i'
+          - '/race/i'
+          - '/bug/i'
+          - '/🐛/i'
     - label: '🧹 Updates'
       title:
-          - '/(improve|update|refactor|⚡|🧹)/i'
-    - label: '🤖 Dependencies'
+          - '/improve/i'
+          - '/update/i'
+          - '/refactor/i'
+          - '/⚡/i'
+          - '/🧹/i'
+    - label: '🤖 dependencies'
       title:
-          - '/(bumb)/i'
+          - '/bumb/i'
+          - '/dependencies/i'
     - label: '✏️ Feature'
       branch:
           - '/feature\/.+/'
       body:
-          - '/(feature|add|🚀)/i'
+          - '/feature/i'
+          - '/add/i'
+          - '/🚀/i'
 template: |
-    ## Changes
     $CHANGES
 
     Thank you $CONTRIBUTORS for making this update possible.

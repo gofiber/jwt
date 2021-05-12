@@ -4,5 +4,5 @@ go 1.14
 
 require (
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
-	github.com/gofiber/fiber/v2 v2.7.1
+	github.com/gofiber/fiber/v2 v2.9.0
 )

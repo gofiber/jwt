@@ -31,7 +31,7 @@ jwtware.New(config ...jwtware.Config) func(*fiber.Ctx) error
 ### Config
 | Property | Type | Description | Default |
 | :--- | :--- | :--- | :--- |
-| Filter | `func(*Ctx) bool` | Defines a function to skip middleware | `nil` |
+| Filter | `func(*fiber.Ctx) bool` | Defines a function to skip middleware | `nil` |
 | SuccessHandler | `func(*fiber.Ctx) error` |  SuccessHandler defines a function which is executed for a valid token. | `nil` |
 | ErrorHandler | `func(*fiber.Ctx, error) error` | ErrorHandler defines a function which is executed for an invalid token. | `401 Invalid or expired JWT` |
 | SigningKey | `interface{}` | Signing key to validate token. Used as fallback if SigningKeys has length 0. | `nil` |

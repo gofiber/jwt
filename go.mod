@@ -4,5 +4,5 @@ go 1.14
 
 require (
 	github.com/gofiber/fiber/v2 v2.16.0
-	github.com/golang-jwt/jwt v3.2.1+incompatible
+	github.com/golang-jwt/jwt/v4 v4.0.0
 )

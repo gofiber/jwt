@@ -1,4 +1,4 @@
-module github.com/Gohryt/jwt/v2
+module github.com/gofiber/jwt/v2
 
 go 1.15
 

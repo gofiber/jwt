@@ -19,7 +19,7 @@ This middleware supports Fiber v1 & v2, install accordingly.
 
 ```
 go get -u github.com/gofiber/fiber/v2
-go get -u github.com/gofiber/jwt/v2
+go get -u github.com/gofiber/jwt/v3
 go get -u github.com/golang-jwt/jwt/v4
 ```
 
@@ -52,7 +52,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	jwtware "github.com/gofiber/jwt/v2"
+	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -150,7 +150,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	jwtware "github.com/gofiber/jwt/v2"
+	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/golang-jwt/jwt/v4"
 )
 

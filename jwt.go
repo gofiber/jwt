@@ -31,12 +31,16 @@ type Config struct {
 	ErrorHandler fiber.ErrorHandler
 
 	// Signing key to validate token. Used as fallback if SigningKeys has length 0.
-	// Required. This or SigningKeys.
+	// Required. This, SigningKeys or KeySetUrl.
 	SigningKey interface{}
 
 	// Map of signing keys to validate token with kid field usage.
-	// Required. This or SigningKey.
+	// Required. This, SigningKey or KeySetUrl.
 	SigningKeys map[string]interface{}
+
+	// URL where set of private keys could be downloaded.
+	// Required. This, SigningKey or SigningKeys.
+	KeySetUrl string
 
 	// Signing method, used to check token signing method.
 	// Optional. Default: "HS256".

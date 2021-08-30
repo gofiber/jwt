@@ -36,7 +36,7 @@ type Options struct {
 }
 
 // applyOptions applies the given options to the given JWKs.
-func applyOptions(jwks *JWKs, options Options) {
+func applyOptions(jwks *keySet, options Options) {
 	if options.Client != nil {
 		jwks.client = options.Client
 	}

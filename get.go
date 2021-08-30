@@ -16,25 +16,17 @@ var (
 	defaultRefreshTimeout = time.Minute
 )
 
-// Get loads the JWKs at the given URL.
-func Get(keySetUrl string, options ...Options) (jwks *JWKs, err error) {
+// getKeySet loads the JWKs at the given URL.
+func getKeySet(config Config) (jwks *keySet, err error) {
 
 	// Create the JWKs.
-	jwks = &JWKs{
-		jwksURL: keySetUrl,
-	}
-
-	// Apply the options to the JWKs.
-	for _, opts := range options {
-		applyOptions(jwks, opts)
+	jwks = &keySet{
+		config: &config,
 	}
 
 	// Apply some defaults if options were not provided.
 	if jwks.client == nil {
 		jwks.client = http.DefaultClient
-	}
-	if jwks.refreshTimeout == nil {
-		jwks.refreshTimeout = &defaultRefreshTimeout
 	}
 
 	// Get the keys for the JWKs.
@@ -43,7 +35,7 @@ func Get(keySetUrl string, options ...Options) (jwks *JWKs, err error) {
 	}
 
 	// Check to see if a background refresh of the JWKs should happen.
-	if jwks.refreshInterval != nil || jwks.refreshRateLimit != nil || jwks.refreshUnknownKID {
+	if config.KeyRefreshInterval != nil || config.KeyRefreshRateLimit != nil {
 
 		// Attach a context used to end the background goroutine.
 		jwks.ctx, jwks.cancel = context.WithCancel(context.Background())
@@ -60,7 +52,7 @@ func Get(keySetUrl string, options ...Options) (jwks *JWKs, err error) {
 
 // backgroundRefresh is meant to be a separate goroutine that will update the keys in a JWKs over a given interval of
 // time.
-func (j *JWKs) backgroundRefresh() {
+func (j *keySet) backgroundRefresh() {
 
 	// Create some rate limiting assets.
 	var lastRefresh time.Time
@@ -156,7 +148,7 @@ func (j *JWKs) backgroundRefresh() {
 }
 
 // refresh does an HTTP GET on the JWKs URL to rebuild the JWKs.
-func (j *JWKs) refresh() (err error) {
+func (j *keySet) refresh() (err error) {
 
 	// Create a context for the request.
 	var ctx context.Context
@@ -188,7 +180,7 @@ func (j *JWKs) refresh() (err error) {
 	}
 
 	// Create an updated JWKs.
-	var updated *JWKs
+	var updated *keySet
 	if updated, err = NewKeys(jwksBytes); err != nil {
 		return err
 	}
@@ -198,7 +190,7 @@ func (j *JWKs) refresh() (err error) {
 	defer j.mux.Unlock()
 
 	// Update the keys.
-	j.Keys = updated.Keys
+	j.keys = updated.keys
 
 	return nil
 }

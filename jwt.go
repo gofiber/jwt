@@ -8,13 +8,19 @@ package jwtware
 import (
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
+)
+
+var (
+
+	// defaultRefreshTimeout is the default duration for the context used to create the HTTP request for a refresh of
+	// the JWKs.
+	defaultKeyRefreshTimeout = time.Minute
 )
 
 // Config defines the config for BasicAuth middleware
@@ -136,15 +142,11 @@ func New(config ...Config) fiber.Handler {
 	if cfg.AuthScheme == "" {
 		cfg.AuthScheme = "Bearer"
 	}
+	if cfg.KeyRefreshTimeout != nil {
+		cfg.KeyRefreshInterval = &defaultKeyRefreshTimeout
+	}
 	if cfg.KeySetUrl != "" {
-		refreshInterval := time.Hour
-		options := Options{
-			RefreshInterval: &refreshInterval,
-			RefreshErrorHandler: func(err error) {
-				log.Printf("There was an error with the jwt.KeyFunc\nError: %s    ", err.Error())
-			},
-		}
-		jwks, err := Get(cfg.KeySetUrl, options)
+		jwks, err := getKeySet(cfg)
 		if err != nil {
 			panic("Fiber: JWT middleware failed to download signing key")
 		}

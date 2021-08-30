@@ -17,7 +17,7 @@ var (
 )
 
 // KeyFunc is a compatibility function that matches the signature of github.com/dgrijalva/jwt-go's KeyFunc function.
-func (j *JWKs) KeyFunc(token *jwt.Token) (interface{}, error) {
+func (j *keySet) KeyFunc(token *jwt.Token) (interface{}, error) {
 
 	// Get the kid from the token header.
 	kidInter, ok := token.Header["kid"]

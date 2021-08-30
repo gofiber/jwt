@@ -32,9 +32,11 @@ type JSONKey struct {
 	precomputed interface{}
 }
 
-// JWKs represents a JSON Web Key Set.
-type JWKs struct {
-	Keys                map[string]*JSONKey
+// keySet represents a JSON Web Key Set.
+type keySet struct {
+	keys   map[string]*JSONKey
+	config *Config
+
 	cancel              context.CancelFunc
 	client              *http.Client
 	ctx                 context.Context
@@ -54,7 +56,7 @@ type rawJWKs struct {
 }
 
 // New creates a new JWKs from a raw JSON message.
-func NewKeys(jwksBytes json.RawMessage) (jwks *JWKs, err error) {
+func NewKeys(jwksBytes json.RawMessage) (jwks *keySet, err error) {
 
 	// Turn the raw JWKs into the correct Go type.
 	var rawKS rawJWKs
@@ -63,12 +65,12 @@ func NewKeys(jwksBytes json.RawMessage) (jwks *JWKs, err error) {
 	}
 
 	// Iterate through the keys in the raw JWKs. Add them to the JWKs.
-	jwks = &JWKs{
-		Keys: make(map[string]*JSONKey, len(rawKS.Keys)),
+	jwks = &keySet{
+		keys: make(map[string]*JSONKey, len(rawKS.Keys)),
 	}
 	for _, key := range rawKS.Keys {
 		key := key
-		jwks.Keys[key.ID] = &key
+		jwks.keys[key.ID] = &key
 	}
 
 	return jwks, nil
@@ -76,19 +78,19 @@ func NewKeys(jwksBytes json.RawMessage) (jwks *JWKs, err error) {
 
 // EndBackground ends the background goroutine to update the JWKs. It can only happen once and is only effective if the
 // JWKs has a background goroutine refreshing the JWKs keys.
-func (j *JWKs) EndBackground() {
+func (j *keySet) EndBackground() {
 	if j.cancel != nil {
 		j.cancel()
 	}
 }
 
 // getKey gets the JSONKey from the given KID from the JWKs. It may refresh the JWKs if configured to.
-func (j *JWKs) getKey(kid string) (jsonKey *JSONKey, err error) {
+func (j *keySet) getKey(kid string) (jsonKey *JSONKey, err error) {
 
 	// Get the JSONKey from the JWKs.
 	var ok bool
 	j.mux.RLock()
-	jsonKey, ok = j.Keys[kid]
+	jsonKey, ok = j.keys[kid]
 	j.mux.RUnlock()
 
 	// Check if the key was present.
@@ -119,7 +121,7 @@ func (j *JWKs) getKey(kid string) (jsonKey *JSONKey, err error) {
 			defer j.mux.RUnlock()
 
 			// Check if the JWKs refresh contained the requested key.
-			if jsonKey, ok = j.Keys[kid]; ok {
+			if jsonKey, ok = j.keys[kid]; ok {
 				return jsonKey, nil
 			}
 		}

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
@@ -41,6 +42,29 @@ type Config struct {
 	// URL where set of private keys could be downloaded.
 	// Required. This, SigningKey or SigningKeys.
 	KeySetUrl string
+
+	// KeyRefreshInterval is the duration to refresh the JWKs in the background via a new HTTP request. If this is not nil,
+	// then a background refresh will be requested in a separate goroutine at this interval until the JWKs method
+	// EndBackground is called.
+	// Optional. If set, the value will be used only if `KeySetUrl` is also present
+	KeyRefreshInterval *time.Duration
+
+	// KeyRefreshRateLimit limits the rate at which refresh requests are granted. Only one refresh request can be queued
+	// at a time any refresh requests received while there is already a queue are ignored. It does not make sense to
+	// have RefreshInterval's value shorter than this.
+	// Optional. If set, the value will be used only if `KeySetUrl` is also present
+	KeyRefreshRateLimit *time.Duration
+
+	// KeyRefreshTimeout is the duration for the context used to create the HTTP request for a refresh of the JWKs. This
+	// defaults to one minute. This is only effectual if RefreshInterval is not nil.
+	// Optional. If set, the value will be used only if `KeySetUrl` is also present
+	KeyRefreshTimeout *time.Duration
+
+	// KeyRefreshUnknownKID indicates that the JWKs refresh request will occur every time a kid that isn't cached is seen.
+	// Without specifying a RefreshInterval a malicious client could self-sign X JWTs, send them to this service,
+	// then cause potentially high network usage proportional to X.
+	// Optional. If set, the value will be used only if `KeySetUrl` is also present
+	KeyRefreshUnknownKID *bool
 
 	// Signing method, used to check token signing method.
 	// Optional. Default: "HS256".

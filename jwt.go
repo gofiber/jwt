@@ -8,6 +8,7 @@ package jwtware
 import (
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -135,20 +136,35 @@ func New(config ...Config) fiber.Handler {
 	if cfg.AuthScheme == "" {
 		cfg.AuthScheme = "Bearer"
 	}
-	cfg.keyFunc = func(t *jwt.Token) (interface{}, error) {
-		// Check the signing method
-		if t.Method.Alg() != cfg.SigningMethod {
-			return nil, fmt.Errorf("Unexpected jwt signing method=%v", t.Header["alg"])
+	if cfg.KeySetUrl != "" {
+		refreshInterval := time.Hour
+		options := Options{
+			RefreshInterval: &refreshInterval,
+			RefreshErrorHandler: func(err error) {
+				log.Printf("There was an error with the jwt.KeyFunc\nError: %s    ", err.Error())
+			},
 		}
-		if len(cfg.SigningKeys) > 0 {
-			if kid, ok := t.Header["kid"].(string); ok {
-				if key, ok := cfg.SigningKeys[kid]; ok {
-					return key, nil
-				}
+		jwks, err := Get(cfg.KeySetUrl, options)
+		if err != nil {
+			panic("Fiber: JWT middleware failed to download signing key")
+		}
+		cfg.keyFunc = jwks.KeyFunc
+	} else {
+		cfg.keyFunc = func(t *jwt.Token) (interface{}, error) {
+			// Check the signing method
+			if t.Method.Alg() != cfg.SigningMethod {
+				return nil, fmt.Errorf("Unexpected jwt signing method=%v", t.Header["alg"])
 			}
-			return nil, fmt.Errorf("Unexpected jwt key id=%v", t.Header["kid"])
+			if len(cfg.SigningKeys) > 0 {
+				if kid, ok := t.Header["kid"].(string); ok {
+					if key, ok := cfg.SigningKeys[kid]; ok {
+						return key, nil
+					}
+				}
+				return nil, fmt.Errorf("Unexpected jwt key id=%v", t.Header["kid"])
+			}
+			return cfg.SigningKey, nil
 		}
-		return cfg.SigningKey, nil
 	}
 	// Initialize
 	extractors := make([]func(c *fiber.Ctx) (string, error), 0)

@@ -17,11 +17,11 @@ var (
 )
 
 // Get loads the JWKs at the given URL.
-func Get(jwksURL string, options ...Options) (jwks *JWKs, err error) {
+func Get(keySetUrl string, options ...Options) (jwks *JWKs, err error) {
 
 	// Create the JWKs.
 	jwks = &JWKs{
-		jwksURL: jwksURL,
+		jwksURL: keySetUrl,
 	}
 
 	// Apply the options to the JWKs.

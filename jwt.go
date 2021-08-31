@@ -9,7 +9,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func jwtKeyFunc(config Config) func(t *jwt.Token) (interface{}, error) {
+// jwtKeyFunc returns a function that returns signing key for given token.
+func jwtKeyFunc(config Config) jwt.Keyfunc {
 	return func(t *jwt.Token) (interface{}, error) {
 		// Check the signing method
 		if t.Method.Alg() != config.SigningMethod {

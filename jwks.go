@@ -30,9 +30,6 @@ var ( // ErrKID indicates that the JWT had an invalid kid.
 	ErrMissingAssets = errors.New("required assets are missing to create a public key")
 )
 
-// ErrorHandler is a function signature that consumes an error.
-type ErrorHandler func(err error)
-
 // rawJWK represents a raw key inside a JWKs.
 type rawJWK struct {
 	Curve       string `json:"crv"`
@@ -49,20 +46,19 @@ type rawJWKs struct {
 	Keys []rawJWK `json:"keys"`
 }
 
-// keySet represents a JSON Web Key Set.
-type keySet struct {
-	keys                map[string]*rawJWK
-	config              *Config
-	cancel              context.CancelFunc
-	client              *http.Client
-	ctx                 context.Context
-	mux                 sync.RWMutex
-	refreshErrorHandler ErrorHandler
-	refreshRequests     chan context.CancelFunc
+// KeySet represents a JSON Web Key Set.
+type KeySet struct {
+	keys            map[string]*rawJWK
+	config          *Config
+	cancel          context.CancelFunc
+	client          *http.Client
+	ctx             context.Context
+	mux             sync.RWMutex
+	refreshRequests chan context.CancelFunc
 }
 
 // keyFunc is a compatibility function that matches the signature of github.com/dgrijalva/jwt-go's keyFunc function.
-func (j *keySet) keyFunc() jwt.Keyfunc {
+func (j *KeySet) keyFunc() jwt.Keyfunc {
 	return func(token *jwt.Token) (interface{}, error) {
 		if j.keys == nil {
 			err := j.downloadKeySet()
@@ -100,7 +96,7 @@ func (j *keySet) keyFunc() jwt.Keyfunc {
 }
 
 // downloadKeySet loads the JWKs at the given URL.
-func (j *keySet) downloadKeySet() (err error) {
+func (j *KeySet) downloadKeySet() (err error) {
 	// Apply some defaults if options were not provided.
 	if j.client == nil {
 		j.client = http.DefaultClient
@@ -145,8 +141,7 @@ func parseKeySet(jwksBytes json.RawMessage) (keys map[string]*rawJWK, err error)
 }
 
 // getKey gets the JSONKey from the given KID from the JWKs. It may refresh the JWKs if configured to.
-func (j *keySet) getKey(kid string) (jsonKey *rawJWK, err error) {
-
+func (j *KeySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 	// Get the JSONKey from the JWKs.
 	var ok bool
 	j.mux.RLock()
@@ -155,10 +150,8 @@ func (j *keySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 
 	// Check if the key was present.
 	if !ok {
-
 		// Check to see if configured to refresh on unknown kid.
 		if *j.config.KeyRefreshUnknownKID {
-
 			// Create a context for refreshing the JWKs.
 			ctx, cancel := context.WithCancel(j.ctx)
 
@@ -194,7 +187,7 @@ func (j *keySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 
 // startRefreshing is meant to be a separate goroutine that will update the keys in a JWKs over a given interval of
 // time.
-func (j *keySet) startRefreshing() {
+func (j *KeySet) startRefreshing() {
 	// Create some rate limiting assets.
 	var lastRefresh time.Time
 	var queueOnce sync.Once
@@ -251,8 +244,10 @@ func (j *keySet) startRefreshing() {
 						// Refresh the JWKs.
 						refreshMux.Lock()
 						defer refreshMux.Unlock()
-						if err := j.refresh(); err != nil && j.refreshErrorHandler != nil {
-							j.refreshErrorHandler(err)
+						if err := j.refresh(); err != nil && j.config.KeyRefreshErrorHandler != nil {
+							j.config.KeyRefreshErrorHandler(j, err)
+						} else if err == nil && j.config.KeyRefreshSuccessHandler != nil {
+							j.config.KeyRefreshSuccessHandler(j)
 						}
 
 						// Reset the last time for the refresh to now.
@@ -264,8 +259,10 @@ func (j *keySet) startRefreshing() {
 				})
 			} else {
 				// Refresh the JWKs.
-				if err := j.refresh(); err != nil && j.refreshErrorHandler != nil {
-					j.refreshErrorHandler(err)
+				if err := j.refresh(); err != nil && j.config.KeyRefreshErrorHandler != nil {
+					j.config.KeyRefreshErrorHandler(j, err)
+				} else if err == nil && j.config.KeyRefreshSuccessHandler != nil {
+					j.config.KeyRefreshSuccessHandler(j)
 				}
 
 				// Reset the last time for the refresh to now.
@@ -284,7 +281,7 @@ func (j *keySet) startRefreshing() {
 }
 
 // refresh does an HTTP GET on the JWKs URL to rebuild the JWKs.
-func (j *keySet) refresh() (err error) {
+func (j *KeySet) refresh() (err error) {
 	// Create a context for the request.
 	var ctx context.Context
 	var cancel context.CancelFunc
@@ -330,9 +327,9 @@ func (j *keySet) refresh() (err error) {
 	return nil
 }
 
-// stopRefreshing ends the background goroutine to update the JWKs. It can only happen once and is only effective if the
+// StopRefreshing ends the background goroutine to update the JWKs. It can only happen once and is only effective if the
 // JWKs has a background goroutine refreshing the JWKs keys.
-func (j *keySet) stopRefreshing() {
+func (j *KeySet) StopRefreshing() {
 	if j.cancel != nil {
 		j.cancel()
 	}

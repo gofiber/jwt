@@ -63,7 +63,7 @@ func New(config ...Config) fiber.Handler {
 		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
 	}
 	if cfg.KeySetUrl != "" {
-		jwks := &keySet{
+		jwks := &KeySet{
 			config: &cfg,
 		}
 		cfg.keyFunc = jwks.keyFunc()

@@ -7,6 +7,12 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+// KeyRefreshErrorHandler is a function signature that consumes a set of signing keys.
+type KeyRefreshSuccessHandler func(j *KeySet)
+
+// KeyRefreshErrorHandler is a function signature that consumes an error.
+type KeyRefreshErrorHandler func(j *KeySet, err error)
+
 // Config defines the config for BasicAuth middleware
 type Config struct {
 	// Filter defines a function to skip middleware.
@@ -33,6 +39,14 @@ type Config struct {
 	// URL where set of private keys could be downloaded.
 	// Required. This, SigningKey or SigningKeys.
 	KeySetUrl string
+
+	// KeyRefreshSuccessHandler defines a function which is executed on successful refresh of key set.
+	// Optional. Default: nil
+	KeyRefreshSuccessHandler KeyRefreshSuccessHandler
+
+	// KeyRefreshErrorHandler defines a function which is executed for refresh key set failure.
+	// Optional. Default: nil
+	KeyRefreshErrorHandler KeyRefreshErrorHandler
 
 	// KeyRefreshInterval is the duration to refresh the JWKs in the background via a new HTTP request. If this is not nil,
 	// then a background refresh will be requested in a separate goroutine at this interval until the JWKs method

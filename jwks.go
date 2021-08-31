@@ -81,7 +81,7 @@ func getKeySet(config Config) (jwks *keySet, err error) {
 		jwks.refreshRequests = make(chan context.CancelFunc, 1)
 
 		// Start the background goroutine for data refresh.
-		go jwks.backgroundRefresh()
+		go jwks.startRefreshing()
 	}
 
 	return jwks, nil
@@ -107,9 +107,9 @@ func parseKeySet(jwksBytes json.RawMessage) (jwks *keySet, err error) {
 	return jwks, nil
 }
 
-// backgroundRefresh is meant to be a separate goroutine that will update the keys in a JWKs over a given interval of
+// startRefreshing is meant to be a separate goroutine that will update the keys in a JWKs over a given interval of
 // time.
-func (j *keySet) backgroundRefresh() {
+func (j *keySet) startRefreshing() {
 	// Create some rate limiting assets.
 	var lastRefresh time.Time
 	var queueOnce sync.Once
@@ -250,9 +250,9 @@ func (j *keySet) refresh() (err error) {
 	return nil
 }
 
-// EndBackground ends the background goroutine to update the JWKs. It can only happen once and is only effective if the
+// stopRefreshing ends the background goroutine to update the JWKs. It can only happen once and is only effective if the
 // JWKs has a background goroutine refreshing the JWKs keys.
-func (j *keySet) EndBackground() {
+func (j *keySet) stopRefreshing() {
 	if j.cancel != nil {
 		j.cancel()
 	}

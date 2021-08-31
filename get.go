@@ -174,7 +174,7 @@ func (j *keySet) refresh() (err error) {
 
 	// Create an updated JWKs.
 	var updated *keySet
-	if updated, err = NewKeys(jwksBytes); err != nil {
+	if updated, err = parseKeySet(jwksBytes); err != nil {
 		return err
 	}
 

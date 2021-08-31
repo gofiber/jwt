@@ -15,19 +15,19 @@ import (
 )
 
 var ( // ErrKID indicates that the JWT had an invalid kid.
-	ErrMissingKeySet = errors.New("not able to download JWKs")
+	errMissingKeySet = errors.New("not able to download JWKs")
 
-	// ErrKID indicates that the JWT had an invalid kid.
-	ErrKID = errors.New("the JWT has an invalid kid")
+	// errKID indicates that the JWT had an invalid kid.
+	errKID = errors.New("the JWT has an invalid kid")
 
-	// ErrUnsupportedKeyType indicates the JWT key type is an unsupported type.
-	ErrUnsupportedKeyType = errors.New("the JWT key type is unsupported")
+	// errUnsupportedKeyType indicates the JWT key type is an unsupported type.
+	errUnsupportedKeyType = errors.New("the JWT key type is unsupported")
 
-	// ErrKIDNotFound indicates that the given key ID was not found in the JWKs.
-	ErrKIDNotFound = errors.New("the given key ID was not found in the JWKs")
+	// errKIDNotFound indicates that the given key ID was not found in the JWKs.
+	errKIDNotFound = errors.New("the given key ID was not found in the JWKs")
 
-	// ErrMissingAssets indicates there are required assets missing to create a public key.
-	ErrMissingAssets = errors.New("required assets are missing to create a public key")
+	// errMissingAssets indicates there are required assets missing to create a public key.
+	errMissingAssets = errors.New("required assets are missing to create a public key")
 )
 
 // rawJWK represents a raw key inside a JWKs.
@@ -63,18 +63,18 @@ func (j *KeySet) keyFunc() jwt.Keyfunc {
 		if j.Keys == nil {
 			err := j.downloadKeySet()
 			if err != nil {
-				return nil, fmt.Errorf("%w: key set URL is not accessible", ErrMissingKeySet)
+				return nil, fmt.Errorf("%w: key set URL is not accessible", errMissingKeySet)
 			}
 		}
 
 		// Get the kid from the token header.
 		kidInter, ok := token.Header["kid"]
 		if !ok {
-			return nil, fmt.Errorf("%w: could not find kid in JWT header", ErrKID)
+			return nil, fmt.Errorf("%w: could not find kid in JWT header", errKID)
 		}
 		kid, ok := kidInter.(string)
 		if !ok {
-			return nil, fmt.Errorf("%w: could not convert kid in JWT header to string", ErrKID)
+			return nil, fmt.Errorf("%w: could not convert kid in JWT header to string", errKID)
 		}
 
 		// Get the JSONKey.
@@ -90,7 +90,7 @@ func (j *KeySet) keyFunc() jwt.Keyfunc {
 		case ps256, ps384, ps512, rs256, rs384, rs512:
 			return jsonKey.getRSA()
 		default:
-			return nil, fmt.Errorf("%w: %s: feel free to add a feature request or contribute to https://github.com/MicahParks/keyfunc", ErrUnsupportedKeyType, keyAlg)
+			return nil, fmt.Errorf("%w: %s: feel free to add a feature request or contribute to https://github.com/MicahParks/keyfunc", errUnsupportedKeyType, keyAlg)
 		}
 	}
 }
@@ -163,7 +163,7 @@ func (j *KeySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 			default:
 
 				// If the j.refreshRequests channel is full, return the error early.
-				return nil, ErrKIDNotFound
+				return nil, errKIDNotFound
 			}
 
 			// Wait for the JWKs refresh to done.
@@ -179,7 +179,7 @@ func (j *KeySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 			}
 		}
 
-		return nil, ErrKIDNotFound
+		return nil, errKIDNotFound
 	}
 
 	return jsonKey, nil

@@ -59,7 +59,7 @@ func (j *rawJWK) getECDSA() (publicKey *ecdsa.PublicKey, err error) {
 
 	// Confirm everything needed is present.
 	if j.X == "" || j.Y == "" || j.Curve == "" {
-		return nil, fmt.Errorf("%w: ecdsa", ErrMissingAssets)
+		return nil, fmt.Errorf("%w: ecdsa", errMissingAssets)
 	}
 
 	// Decode the X coordinate from Base64.
@@ -119,7 +119,7 @@ func (j *rawJWK) getRSA() (publicKey *rsa.PublicKey, err error) {
 
 	// Confirm everything needed is present.
 	if j.Exponent == "" || j.Modulus == "" {
-		return nil, fmt.Errorf("%w: rsa", ErrMissingAssets)
+		return nil, fmt.Errorf("%w: rsa", errMissingAssets)
 	}
 
 	// Decode the exponent from Base64.

@@ -80,9 +80,9 @@ func (j *keySet) keyFunc(token *jwt.Token) (interface{}, error) {
 	// Determine the key's algorithm and return the appropriate public key.
 	switch keyAlg := token.Header["alg"]; keyAlg {
 	case es256, es384, es512:
-		return jsonKey.ECDSA()
+		return jsonKey.getECDSA()
 	case ps256, ps384, ps512, rs256, rs384, rs512:
-		return jsonKey.RSA()
+		return jsonKey.getRSA()
 	default:
 		return nil, fmt.Errorf("%w: %s: feel free to add a feature request or contribute to https://github.com/MicahParks/keyfunc", ErrUnsupportedKeyType, keyAlg)
 	}

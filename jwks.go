@@ -21,8 +21,8 @@ var (
 // ErrorHandler is a function signature that consumes an error.
 type ErrorHandler func(err error)
 
-// JSONKey represents a raw key inside a JWKs.
-type JSONKey struct {
+// rawJWK represents a raw key inside a JWKs.
+type rawJWK struct {
 	Curve       string `json:"crv"`
 	Exponent    string `json:"e"`
 	ID          string `json:"kid"`
@@ -32,9 +32,14 @@ type JSONKey struct {
 	precomputed interface{}
 }
 
+// rawJWKs represents a JWKs in JSON format.
+type rawJWKs struct {
+	Keys []rawJWK `json:"keys"`
+}
+
 // keySet represents a JSON Web Key Set.
 type keySet struct {
-	keys   map[string]*JSONKey
+	keys   map[string]*rawJWK
 	config *Config
 
 	cancel              context.CancelFunc
@@ -48,11 +53,6 @@ type keySet struct {
 	refreshUnknownKID   bool
 }
 
-// rawJWKs represents a JWKs in JSON format.
-type rawJWKs struct {
-	Keys []JSONKey `json:"keys"`
-}
-
 // New creates a new JWKs from a raw JSON message.
 func parseKeySet(jwksBytes json.RawMessage) (jwks *keySet, err error) {
 
@@ -64,7 +64,7 @@ func parseKeySet(jwksBytes json.RawMessage) (jwks *keySet, err error) {
 
 	// Iterate through the keys in the raw JWKs. Add them to the JWKs.
 	jwks = &keySet{
-		keys: make(map[string]*JSONKey, len(rawKS.Keys)),
+		keys: make(map[string]*rawJWK, len(rawKS.Keys)),
 	}
 	for _, key := range rawKS.Keys {
 		key := key
@@ -83,7 +83,7 @@ func (j *keySet) EndBackground() {
 }
 
 // getKey gets the JSONKey from the given KID from the JWKs. It may refresh the JWKs if configured to.
-func (j *keySet) getKey(kid string) (jsonKey *JSONKey, err error) {
+func (j *keySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 
 	// Get the JSONKey from the JWKs.
 	var ok bool

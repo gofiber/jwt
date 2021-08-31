@@ -30,7 +30,7 @@ const (
 )
 
 // ECDSA parses a JSONKey and turns it into an ECDSA public key.
-func (j *JSONKey) ECDSA() (publicKey *ecdsa.PublicKey, err error) {
+func (j *rawJWK) ECDSA() (publicKey *ecdsa.PublicKey, err error) {
 
 	// Check if the key has already been computed.
 	if j.precomputed != nil {

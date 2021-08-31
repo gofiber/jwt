@@ -125,7 +125,7 @@ func New(config ...Config) fiber.Handler {
 		}
 	}
 	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetUrl == "" {
-		panic("Fiber: JWT middleware requires information about signing key")
+		panic("Fiber: JWT middleware requires signing key or url where to download one")
 	}
 	if cfg.SigningMethod == "" {
 		cfg.SigningMethod = "HS256"

@@ -29,7 +29,7 @@ const (
 )
 
 // RSA parses a JSONKey and turns it into an RSA public key.
-func (j *JSONKey) RSA() (publicKey *rsa.PublicKey, err error) {
+func (j *rawJWK) RSA() (publicKey *rsa.PublicKey, err error) {
 
 	// Check if the key has already been computed.
 	if j.precomputed != nil {

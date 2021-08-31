@@ -41,10 +41,10 @@ func New(config ...Config) fiber.Handler {
 			}
 		}
 	}
-	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetUrl == "" {
+	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" {
 		panic("Fiber: JWT middleware requires signing key or url where to download one")
 	}
-	if cfg.SigningMethod == "" && cfg.KeySetUrl == "" {
+	if cfg.SigningMethod == "" && cfg.KeySetURL == "" {
 		cfg.SigningMethod = "HS256"
 	}
 	if cfg.ContextKey == "" {
@@ -62,7 +62,7 @@ func New(config ...Config) fiber.Handler {
 	if cfg.KeyRefreshTimeout == nil {
 		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
 	}
-	if cfg.KeySetUrl != "" {
+	if cfg.KeySetURL != "" {
 		jwks := &KeySet{
 			Config: &cfg,
 		}

@@ -38,7 +38,7 @@ type Config struct {
 
 	// URL where set of private keys could be downloaded.
 	// Required. This, SigningKey or SigningKeys.
-	KeySetUrl string
+	KeySetURL string
 
 	// KeyRefreshSuccessHandler defines a function which is executed on successful refresh of key set.
 	// Optional. Default: nil

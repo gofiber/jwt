@@ -294,7 +294,7 @@ func (j *KeySet) refresh() (err error) {
 
 	// Create the HTTP request.
 	var req *http.Request
-	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, j.Config.KeySetUrl, bytes.NewReader(nil)); err != nil {
+	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, j.Config.KeySetURL, bytes.NewReader(nil)); err != nil {
 		return err
 	}
 

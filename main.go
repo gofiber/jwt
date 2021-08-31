@@ -6,7 +6,6 @@
 package jwtware
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -71,21 +70,7 @@ func New(config ...Config) fiber.Handler {
 		}
 		cfg.keyFunc = jwks.KeyFunc
 	} else {
-		cfg.keyFunc = func(t *jwt.Token) (interface{}, error) {
-			// Check the signing method
-			if t.Method.Alg() != cfg.SigningMethod {
-				return nil, fmt.Errorf("Unexpected jwt signing method=%v", t.Header["alg"])
-			}
-			if len(cfg.SigningKeys) > 0 {
-				if kid, ok := t.Header["kid"].(string); ok {
-					if key, ok := cfg.SigningKeys[kid]; ok {
-						return key, nil
-					}
-				}
-				return nil, fmt.Errorf("Unexpected jwt key id=%v", t.Header["kid"])
-			}
-			return cfg.SigningKey, nil
-		}
+		cfg.keyFunc = jwtKeyFunc(cfg)
 	}
 	// Initialize
 	extractors := make([]func(c *fiber.Ctx) (string, error), 0)

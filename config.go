@@ -7,10 +7,12 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// KeyRefreshErrorHandler is a function signature that consumes a set of signing keys.
+// KeyRefreshSuccessHandler is a function signature that consumes a set of signing key set.
+// Presence of original signing key set allows to update configuration or stop background refresh.
 type KeyRefreshSuccessHandler func(j *KeySet)
 
-// KeyRefreshErrorHandler is a function signature that consumes an error.
+// KeyRefreshErrorHandler is a function signature that consumes a set of signing key set and an error.
+// Presence of original signing key set allows to update configuration or stop background refresh.
 type KeyRefreshErrorHandler func(j *KeySet, err error)
 
 // Config defines the config for BasicAuth middleware

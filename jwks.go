@@ -5,13 +5,22 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 var (
+	// ErrKID indicates that the JWT had an invalid kid.
+	ErrKID = errors.New("the JWT has an invalid kid")
+
+	// ErrUnsupportedKeyType indicates the JWT key type is an unsupported type.
+	ErrUnsupportedKeyType = errors.New("the JWT key type is unsupported")
+
 	// ErrKIDNotFound indicates that the given key ID was not found in the JWKs.
 	ErrKIDNotFound = errors.New("the given key ID was not found in the JWKs")
 
@@ -48,6 +57,35 @@ type keySet struct {
 	mux                 sync.RWMutex
 	refreshErrorHandler ErrorHandler
 	refreshRequests     chan context.CancelFunc
+}
+
+// keyFunc is a compatibility function that matches the signature of github.com/dgrijalva/jwt-go's keyFunc function.
+func (j *keySet) keyFunc(token *jwt.Token) (interface{}, error) {
+	// Get the kid from the token header.
+	kidInter, ok := token.Header["kid"]
+	if !ok {
+		return nil, fmt.Errorf("%w: could not find kid in JWT header", ErrKID)
+	}
+	kid, ok := kidInter.(string)
+	if !ok {
+		return nil, fmt.Errorf("%w: could not convert kid in JWT header to string", ErrKID)
+	}
+
+	// Get the JSONKey.
+	jsonKey, err := j.getKey(kid)
+	if err != nil {
+		return nil, err
+	}
+
+	// Determine the key's algorithm and return the appropriate public key.
+	switch keyAlg := token.Header["alg"]; keyAlg {
+	case es256, es384, es512:
+		return jsonKey.ECDSA()
+	case ps256, ps384, ps512, rs256, rs384, rs512:
+		return jsonKey.RSA()
+	default:
+		return nil, fmt.Errorf("%w: %s: feel free to add a feature request or contribute to https://github.com/MicahParks/keyfunc", ErrUnsupportedKeyType, keyAlg)
+	}
 }
 
 // getKeySet loads the JWKs at the given URL.
@@ -101,6 +139,54 @@ func parseKeySet(jwksBytes json.RawMessage) (jwks *keySet, err error) {
 	}
 
 	return jwks, nil
+}
+
+// getKey gets the JSONKey from the given KID from the JWKs. It may refresh the JWKs if configured to.
+func (j *keySet) getKey(kid string) (jsonKey *rawJWK, err error) {
+
+	// Get the JSONKey from the JWKs.
+	var ok bool
+	j.mux.RLock()
+	jsonKey, ok = j.keys[kid]
+	j.mux.RUnlock()
+
+	// Check if the key was present.
+	if !ok {
+
+		// Check to see if configured to refresh on unknown kid.
+		if *j.config.KeyRefreshUnknownKID {
+
+			// Create a context for refreshing the JWKs.
+			ctx, cancel := context.WithCancel(j.ctx)
+
+			// Refresh the JWKs.
+			select {
+			case <-j.ctx.Done():
+				return
+			case j.refreshRequests <- cancel:
+			default:
+
+				// If the j.refreshRequests channel is full, return the error early.
+				return nil, ErrKIDNotFound
+			}
+
+			// Wait for the JWKs refresh to done.
+			<-ctx.Done()
+
+			// Lock the JWKs for async safe use.
+			j.mux.RLock()
+			defer j.mux.RUnlock()
+
+			// Check if the JWKs refresh contained the requested key.
+			if jsonKey, ok = j.keys[kid]; ok {
+				return jsonKey, nil
+			}
+		}
+
+		return nil, ErrKIDNotFound
+	}
+
+	return jsonKey, nil
 }
 
 // startRefreshing is meant to be a separate goroutine that will update the keys in a JWKs over a given interval of
@@ -250,52 +336,4 @@ func (j *keySet) stopRefreshing() {
 	if j.cancel != nil {
 		j.cancel()
 	}
-}
-
-// getKey gets the JSONKey from the given KID from the JWKs. It may refresh the JWKs if configured to.
-func (j *keySet) getKey(kid string) (jsonKey *rawJWK, err error) {
-
-	// Get the JSONKey from the JWKs.
-	var ok bool
-	j.mux.RLock()
-	jsonKey, ok = j.keys[kid]
-	j.mux.RUnlock()
-
-	// Check if the key was present.
-	if !ok {
-
-		// Check to see if configured to refresh on unknown kid.
-		if *j.config.KeyRefreshUnknownKID {
-
-			// Create a context for refreshing the JWKs.
-			ctx, cancel := context.WithCancel(j.ctx)
-
-			// Refresh the JWKs.
-			select {
-			case <-j.ctx.Done():
-				return
-			case j.refreshRequests <- cancel:
-			default:
-
-				// If the j.refreshRequests channel is full, return the error early.
-				return nil, ErrKIDNotFound
-			}
-
-			// Wait for the JWKs refresh to done.
-			<-ctx.Done()
-
-			// Lock the JWKs for async safe use.
-			j.mux.RLock()
-			defer j.mux.RUnlock()
-
-			// Check if the JWKs refresh contained the requested key.
-			if jsonKey, ok = j.keys[kid]; ok {
-				return jsonKey, nil
-			}
-		}
-
-		return nil, ErrKIDNotFound
-	}
-
-	return jsonKey, nil
 }

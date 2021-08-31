@@ -67,7 +67,7 @@ func New(config ...Config) fiber.Handler {
 		if err != nil {
 			panic("Fiber: JWT middleware failed to download signing key")
 		}
-		cfg.keyFunc = jwks.KeyFunc
+		cfg.keyFunc = jwks.keyFunc
 	} else {
 		cfg.keyFunc = jwtKeyFunc(cfg)
 	}

@@ -36,9 +36,8 @@ func New(config ...Config) fiber.Handler {
 		cfg.ErrorHandler = func(c *fiber.Ctx, err error) error {
 			if err.Error() == "Missing or malformed JWT" {
 				return c.Status(fiber.StatusBadRequest).SendString("Missing or malformed JWT")
-			} else {
-				return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
 			}
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
 		}
 	}
 	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" {

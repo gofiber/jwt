@@ -15,7 +15,7 @@ type KeyRefreshSuccessHandler func(j *KeySet)
 // Presence of original signing key set allows to update configuration or stop background refresh.
 type KeyRefreshErrorHandler func(j *KeySet, err error)
 
-// Config defines the config for BasicAuth middleware
+// Config defines the config for JWT middleware
 type Config struct {
 	// Filter defines a function to skip middleware.
 	// Optional. Default: nil

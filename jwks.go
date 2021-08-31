@@ -40,18 +40,14 @@ type rawJWKs struct {
 
 // keySet represents a JSON Web Key Set.
 type keySet struct {
-	keys   map[string]*rawJWK
-	config *Config
-
+	keys                map[string]*rawJWK
+	config              *Config
 	cancel              context.CancelFunc
 	client              *http.Client
 	ctx                 context.Context
 	mux                 sync.RWMutex
 	refreshErrorHandler ErrorHandler
-	refreshInterval     *time.Duration
-	refreshRateLimit    *time.Duration
 	refreshRequests     chan context.CancelFunc
-	refreshUnknownKID   bool
 }
 
 // getKeySet loads the JWKs at the given URL.
@@ -114,8 +110,8 @@ func (j *keySet) startRefreshing() {
 	var lastRefresh time.Time
 	var queueOnce sync.Once
 	var refreshMux sync.Mutex
-	if j.refreshRateLimit != nil {
-		lastRefresh = time.Now().Add(-*j.refreshRateLimit)
+	if j.config.KeyRefreshRateLimit != nil {
+		lastRefresh = time.Now().Add(-*j.config.KeyRefreshRateLimit)
 	}
 
 	// Create a channel that will never send anything unless there is a refresh interval.
@@ -125,8 +121,8 @@ func (j *keySet) startRefreshing() {
 	for {
 
 		// If there is a refresh interval, create the channel for it.
-		if j.refreshInterval != nil {
-			refreshInterval = time.After(*j.refreshInterval)
+		if j.config.KeyRefreshInterval != nil {
+			refreshInterval = time.After(*j.config.KeyRefreshInterval)
 		}
 
 		// Wait for a refresh to occur or the background to end.
@@ -146,7 +142,7 @@ func (j *keySet) startRefreshing() {
 
 			// Rate limit, if needed.
 			refreshMux.Lock()
-			if j.refreshRateLimit != nil && lastRefresh.Add(*j.refreshRateLimit).After(time.Now()) {
+			if j.config.KeyRefreshRateLimit != nil && lastRefresh.Add(*j.config.KeyRefreshRateLimit).After(time.Now()) {
 
 				// Don't make the JWT parsing goroutine wait for the JWKs to refresh.
 				cancel()
@@ -156,10 +152,9 @@ func (j *keySet) startRefreshing() {
 
 					// Launch a goroutine that will get a reservation for a JWKs refresh or fail to and immediately return.
 					go func() {
-
 						// Wait for the next time to refresh.
 						refreshMux.Lock()
-						wait := time.Until(lastRefresh.Add(*j.refreshRateLimit))
+						wait := time.Until(lastRefresh.Add(*j.config.KeyRefreshRateLimit))
 						refreshMux.Unlock()
 						select {
 						case <-j.ctx.Done():
@@ -182,7 +177,6 @@ func (j *keySet) startRefreshing() {
 					}()
 				})
 			} else {
-
 				// Refresh the JWKs.
 				if err := j.refresh(); err != nil && j.refreshErrorHandler != nil {
 					j.refreshErrorHandler(err)
@@ -271,7 +265,7 @@ func (j *keySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 	if !ok {
 
 		// Check to see if configured to refresh on unknown kid.
-		if j.refreshUnknownKID {
+		if *j.config.KeyRefreshUnknownKID {
 
 			// Create a context for refreshing the JWKs.
 			ctx, cancel := context.WithCancel(j.ctx)

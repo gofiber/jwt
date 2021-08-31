@@ -15,7 +15,6 @@ import (
 )
 
 var (
-
 	// defaultRefreshTimeout is the default duration for the context used to create the HTTP request for a refresh of
 	// the JWKs.
 	defaultKeyRefreshTimeout = time.Minute
@@ -45,7 +44,7 @@ func New(config ...Config) fiber.Handler {
 	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetUrl == "" {
 		panic("Fiber: JWT middleware requires signing key or url where to download one")
 	}
-	if cfg.SigningMethod == "" {
+	if cfg.SigningMethod == "" && cfg.KeySetUrl == "" {
 		cfg.SigningMethod = "HS256"
 	}
 	if cfg.ContextKey == "" {
@@ -72,6 +71,7 @@ func New(config ...Config) fiber.Handler {
 	} else {
 		cfg.keyFunc = jwtKeyFunc(cfg)
 	}
+
 	// Initialize
 	extractors := make([]func(c *fiber.Ctx) (string, error), 0)
 	rootParts := strings.Split(cfg.TokenLookup, ",")
@@ -89,6 +89,7 @@ func New(config ...Config) fiber.Handler {
 			extractors = append(extractors, jwtFromCookie(parts[1]))
 		}
 	}
+
 	// Return middleware handler
 	return func(c *fiber.Ctx) error {
 		// Filter request to skip middleware

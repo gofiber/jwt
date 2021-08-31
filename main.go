@@ -63,11 +63,10 @@ func New(config ...Config) fiber.Handler {
 		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
 	}
 	if cfg.KeySetUrl != "" {
-		jwks, err := getKeySet(cfg)
-		if err != nil {
-			panic("Fiber: JWT middleware failed to download signing key")
+		jwks := &keySet{
+			config: &cfg,
 		}
-		cfg.keyFunc = jwks.keyFunc
+		cfg.keyFunc = jwks.keyFunc()
 	} else {
 		cfg.keyFunc = jwtKeyFunc(cfg)
 	}

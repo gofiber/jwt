@@ -14,7 +14,9 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var (
+var ( // ErrKID indicates that the JWT had an invalid kid.
+	ErrMissingKeySet = errors.New("not able to download JWKs")
+
 	// ErrKID indicates that the JWT had an invalid kid.
 	ErrKID = errors.New("the JWT has an invalid kid")
 
@@ -60,69 +62,72 @@ type keySet struct {
 }
 
 // keyFunc is a compatibility function that matches the signature of github.com/dgrijalva/jwt-go's keyFunc function.
-func (j *keySet) keyFunc(token *jwt.Token) (interface{}, error) {
-	// Get the kid from the token header.
-	kidInter, ok := token.Header["kid"]
-	if !ok {
-		return nil, fmt.Errorf("%w: could not find kid in JWT header", ErrKID)
-	}
-	kid, ok := kidInter.(string)
-	if !ok {
-		return nil, fmt.Errorf("%w: could not convert kid in JWT header to string", ErrKID)
-	}
+func (j *keySet) keyFunc() jwt.Keyfunc {
+	return func(token *jwt.Token) (interface{}, error) {
+		if j.keys == nil {
+			err := j.downloadKeySet()
+			if err != nil {
+				return nil, fmt.Errorf("%w: key set URL is not accessible", ErrMissingKeySet)
+			}
+		}
 
-	// Get the JSONKey.
-	jsonKey, err := j.getKey(kid)
-	if err != nil {
-		return nil, err
-	}
+		// Get the kid from the token header.
+		kidInter, ok := token.Header["kid"]
+		if !ok {
+			return nil, fmt.Errorf("%w: could not find kid in JWT header", ErrKID)
+		}
+		kid, ok := kidInter.(string)
+		if !ok {
+			return nil, fmt.Errorf("%w: could not convert kid in JWT header to string", ErrKID)
+		}
 
-	// Determine the key's algorithm and return the appropriate public key.
-	switch keyAlg := token.Header["alg"]; keyAlg {
-	case es256, es384, es512:
-		return jsonKey.getECDSA()
-	case ps256, ps384, ps512, rs256, rs384, rs512:
-		return jsonKey.getRSA()
-	default:
-		return nil, fmt.Errorf("%w: %s: feel free to add a feature request or contribute to https://github.com/MicahParks/keyfunc", ErrUnsupportedKeyType, keyAlg)
+		// Get the JSONKey.
+		jsonKey, err := j.getKey(kid)
+		if err != nil {
+			return nil, err
+		}
+
+		// Determine the key's algorithm and return the appropriate public key.
+		switch keyAlg := token.Header["alg"]; keyAlg {
+		case es256, es384, es512:
+			return jsonKey.getECDSA()
+		case ps256, ps384, ps512, rs256, rs384, rs512:
+			return jsonKey.getRSA()
+		default:
+			return nil, fmt.Errorf("%w: %s: feel free to add a feature request or contribute to https://github.com/MicahParks/keyfunc", ErrUnsupportedKeyType, keyAlg)
+		}
 	}
 }
 
-// getKeySet loads the JWKs at the given URL.
-func getKeySet(config Config) (jwks *keySet, err error) {
-	// Create the JWKs.
-	jwks = &keySet{
-		config: &config,
-	}
-
+// downloadKeySet loads the JWKs at the given URL.
+func (j *keySet) downloadKeySet() (err error) {
 	// Apply some defaults if options were not provided.
-	if jwks.client == nil {
-		jwks.client = http.DefaultClient
+	if j.client == nil {
+		j.client = http.DefaultClient
 	}
 
 	// Get the keys for the JWKs.
-	if err = jwks.refresh(); err != nil {
-		return nil, err
+	if err = j.refresh(); err != nil {
+		return err
 	}
 
 	// Check to see if a background refresh of the JWKs should happen.
-	if config.KeyRefreshInterval != nil || config.KeyRefreshRateLimit != nil {
-
+	if j.config.KeyRefreshInterval != nil || j.config.KeyRefreshRateLimit != nil {
 		// Attach a context used to end the background goroutine.
-		jwks.ctx, jwks.cancel = context.WithCancel(context.Background())
+		j.ctx, j.cancel = context.WithCancel(context.Background())
 
 		// Create a channel that will accept requests to refresh the JWKs.
-		jwks.refreshRequests = make(chan context.CancelFunc, 1)
+		j.refreshRequests = make(chan context.CancelFunc, 1)
 
 		// Start the background goroutine for data refresh.
-		go jwks.startRefreshing()
+		go j.startRefreshing()
 	}
 
-	return jwks, nil
+	return nil
 }
 
 // New creates a new JWKs from a raw JSON message.
-func parseKeySet(jwksBytes json.RawMessage) (jwks *keySet, err error) {
+func parseKeySet(jwksBytes json.RawMessage) (keys map[string]*rawJWK, err error) {
 	// Turn the raw JWKs into the correct Go type.
 	var rawKS rawJWKs
 	if err = json.Unmarshal(jwksBytes, &rawKS); err != nil {
@@ -130,15 +135,13 @@ func parseKeySet(jwksBytes json.RawMessage) (jwks *keySet, err error) {
 	}
 
 	// Iterate through the keys in the raw JWKs. Add them to the JWKs.
-	jwks = &keySet{
-		keys: make(map[string]*rawJWK, len(rawKS.Keys)),
-	}
+	keys = make(map[string]*rawJWK, len(rawKS.Keys))
 	for _, key := range rawKS.Keys {
 		key := key
-		jwks.keys[key.ID] = &key
+		keys[key.ID] = &key
 	}
 
-	return jwks, nil
+	return keys, nil
 }
 
 // getKey gets the JSONKey from the given KID from the JWKs. It may refresh the JWKs if configured to.
@@ -205,7 +208,6 @@ func (j *keySet) startRefreshing() {
 
 	// Enter an infinite loop that ends when the background ends.
 	for {
-
 		// If there is a refresh interval, create the channel for it.
 		if j.config.KeyRefreshInterval != nil {
 			refreshInterval = time.After(*j.config.KeyRefreshInterval)
@@ -225,11 +227,9 @@ func (j *keySet) startRefreshing() {
 
 		// Accept refresh requests.
 		case cancel := <-j.refreshRequests:
-
 			// Rate limit, if needed.
 			refreshMux.Lock()
 			if j.config.KeyRefreshRateLimit != nil && lastRefresh.Add(*j.config.KeyRefreshRateLimit).After(time.Now()) {
-
 				// Don't make the JWT parsing goroutine wait for the JWKs to refresh.
 				cancel()
 
@@ -315,8 +315,8 @@ func (j *keySet) refresh() (err error) {
 	}
 
 	// Create an updated JWKs.
-	var updated *keySet
-	if updated, err = parseKeySet(jwksBytes); err != nil {
+	var keys map[string]*rawJWK
+	if keys, err = parseKeySet(jwksBytes); err != nil {
 		return err
 	}
 
@@ -325,7 +325,7 @@ func (j *keySet) refresh() (err error) {
 	defer j.mux.Unlock()
 
 	// Update the keys.
-	j.keys = updated.keys
+	j.keys = keys
 
 	return nil
 }

@@ -48,8 +48,8 @@ type rawJWKs struct {
 
 // KeySet represents a JSON Web Key Set.
 type KeySet struct {
-	keys            map[string]*rawJWK
-	config          *Config
+	Keys            map[string]*rawJWK
+	Config          *Config
 	cancel          context.CancelFunc
 	client          *http.Client
 	ctx             context.Context
@@ -60,7 +60,7 @@ type KeySet struct {
 // keyFunc is a compatibility function that matches the signature of github.com/dgrijalva/jwt-go's keyFunc function.
 func (j *KeySet) keyFunc() jwt.Keyfunc {
 	return func(token *jwt.Token) (interface{}, error) {
-		if j.keys == nil {
+		if j.Keys == nil {
 			err := j.downloadKeySet()
 			if err != nil {
 				return nil, fmt.Errorf("%w: key set URL is not accessible", ErrMissingKeySet)
@@ -108,7 +108,7 @@ func (j *KeySet) downloadKeySet() (err error) {
 	}
 
 	// Check to see if a background refresh of the JWKs should happen.
-	if j.config.KeyRefreshInterval != nil || j.config.KeyRefreshRateLimit != nil {
+	if j.Config.KeyRefreshInterval != nil || j.Config.KeyRefreshRateLimit != nil {
 		// Attach a context used to end the background goroutine.
 		j.ctx, j.cancel = context.WithCancel(context.Background())
 
@@ -145,13 +145,13 @@ func (j *KeySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 	// Get the JSONKey from the JWKs.
 	var ok bool
 	j.mux.RLock()
-	jsonKey, ok = j.keys[kid]
+	jsonKey, ok = j.Keys[kid]
 	j.mux.RUnlock()
 
 	// Check if the key was present.
 	if !ok {
 		// Check to see if configured to refresh on unknown kid.
-		if *j.config.KeyRefreshUnknownKID {
+		if *j.Config.KeyRefreshUnknownKID {
 			// Create a context for refreshing the JWKs.
 			ctx, cancel := context.WithCancel(j.ctx)
 
@@ -174,7 +174,7 @@ func (j *KeySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 			defer j.mux.RUnlock()
 
 			// Check if the JWKs refresh contained the requested key.
-			if jsonKey, ok = j.keys[kid]; ok {
+			if jsonKey, ok = j.Keys[kid]; ok {
 				return jsonKey, nil
 			}
 		}
@@ -192,8 +192,8 @@ func (j *KeySet) startRefreshing() {
 	var lastRefresh time.Time
 	var queueOnce sync.Once
 	var refreshMux sync.Mutex
-	if j.config.KeyRefreshRateLimit != nil {
-		lastRefresh = time.Now().Add(-*j.config.KeyRefreshRateLimit)
+	if j.Config.KeyRefreshRateLimit != nil {
+		lastRefresh = time.Now().Add(-*j.Config.KeyRefreshRateLimit)
 	}
 
 	// Create a channel that will never send anything unless there is a refresh interval.
@@ -202,8 +202,8 @@ func (j *KeySet) startRefreshing() {
 	// Enter an infinite loop that ends when the background ends.
 	for {
 		// If there is a refresh interval, create the channel for it.
-		if j.config.KeyRefreshInterval != nil {
-			refreshInterval = time.After(*j.config.KeyRefreshInterval)
+		if j.Config.KeyRefreshInterval != nil {
+			refreshInterval = time.After(*j.Config.KeyRefreshInterval)
 		}
 
 		// Wait for a refresh to occur or the background to end.
@@ -222,7 +222,7 @@ func (j *KeySet) startRefreshing() {
 		case cancel := <-j.refreshRequests:
 			// Rate limit, if needed.
 			refreshMux.Lock()
-			if j.config.KeyRefreshRateLimit != nil && lastRefresh.Add(*j.config.KeyRefreshRateLimit).After(time.Now()) {
+			if j.Config.KeyRefreshRateLimit != nil && lastRefresh.Add(*j.Config.KeyRefreshRateLimit).After(time.Now()) {
 				// Don't make the JWT parsing goroutine wait for the JWKs to refresh.
 				cancel()
 
@@ -233,7 +233,7 @@ func (j *KeySet) startRefreshing() {
 					go func() {
 						// Wait for the next time to refresh.
 						refreshMux.Lock()
-						wait := time.Until(lastRefresh.Add(*j.config.KeyRefreshRateLimit))
+						wait := time.Until(lastRefresh.Add(*j.Config.KeyRefreshRateLimit))
 						refreshMux.Unlock()
 						select {
 						case <-j.ctx.Done():
@@ -244,10 +244,10 @@ func (j *KeySet) startRefreshing() {
 						// Refresh the JWKs.
 						refreshMux.Lock()
 						defer refreshMux.Unlock()
-						if err := j.refresh(); err != nil && j.config.KeyRefreshErrorHandler != nil {
-							j.config.KeyRefreshErrorHandler(j, err)
-						} else if err == nil && j.config.KeyRefreshSuccessHandler != nil {
-							j.config.KeyRefreshSuccessHandler(j)
+						if err := j.refresh(); err != nil && j.Config.KeyRefreshErrorHandler != nil {
+							j.Config.KeyRefreshErrorHandler(j, err)
+						} else if err == nil && j.Config.KeyRefreshSuccessHandler != nil {
+							j.Config.KeyRefreshSuccessHandler(j)
 						}
 
 						// Reset the last time for the refresh to now.
@@ -259,10 +259,10 @@ func (j *KeySet) startRefreshing() {
 				})
 			} else {
 				// Refresh the JWKs.
-				if err := j.refresh(); err != nil && j.config.KeyRefreshErrorHandler != nil {
-					j.config.KeyRefreshErrorHandler(j, err)
-				} else if err == nil && j.config.KeyRefreshSuccessHandler != nil {
-					j.config.KeyRefreshSuccessHandler(j)
+				if err := j.refresh(); err != nil && j.Config.KeyRefreshErrorHandler != nil {
+					j.Config.KeyRefreshErrorHandler(j, err)
+				} else if err == nil && j.Config.KeyRefreshSuccessHandler != nil {
+					j.Config.KeyRefreshSuccessHandler(j)
 				}
 
 				// Reset the last time for the refresh to now.
@@ -286,15 +286,15 @@ func (j *KeySet) refresh() (err error) {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	if j.ctx != nil {
-		ctx, cancel = context.WithTimeout(j.ctx, *j.config.KeyRefreshTimeout)
+		ctx, cancel = context.WithTimeout(j.ctx, *j.Config.KeyRefreshTimeout)
 	} else {
-		ctx, cancel = context.WithTimeout(context.Background(), *j.config.KeyRefreshTimeout)
+		ctx, cancel = context.WithTimeout(context.Background(), *j.Config.KeyRefreshTimeout)
 	}
 	defer cancel()
 
 	// Create the HTTP request.
 	var req *http.Request
-	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, j.config.KeySetUrl, bytes.NewReader(nil)); err != nil {
+	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, j.Config.KeySetUrl, bytes.NewReader(nil)); err != nil {
 		return err
 	}
 
@@ -322,7 +322,7 @@ func (j *KeySet) refresh() (err error) {
 	defer j.mux.Unlock()
 
 	// Update the keys.
-	j.keys = keys
+	j.Keys = keys
 
 	return nil
 }

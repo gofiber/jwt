@@ -64,7 +64,7 @@ func New(config ...Config) fiber.Handler {
 	}
 	if cfg.KeySetUrl != "" {
 		jwks := &KeySet{
-			config: &cfg,
+			Config: &cfg,
 		}
 		cfg.keyFunc = jwks.keyFunc()
 	} else {

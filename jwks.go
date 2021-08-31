@@ -40,7 +40,6 @@ type keySet struct {
 	cancel              context.CancelFunc
 	client              *http.Client
 	ctx                 context.Context
-	jwksURL             string
 	mux                 sync.RWMutex
 	refreshErrorHandler ErrorHandler
 	refreshInterval     *time.Duration

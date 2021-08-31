@@ -142,8 +142,8 @@ func New(config ...Config) fiber.Handler {
 	if cfg.AuthScheme == "" {
 		cfg.AuthScheme = "Bearer"
 	}
-	if cfg.KeyRefreshTimeout != nil {
-		cfg.KeyRefreshInterval = &defaultKeyRefreshTimeout
+	if cfg.KeyRefreshTimeout == nil {
+		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
 	}
 	if cfg.KeySetUrl != "" {
 		jwks, err := getKeySet(cfg)

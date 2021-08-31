@@ -9,13 +9,6 @@ import (
 	"time"
 )
 
-var (
-
-	// defaultRefreshTimeout is the default duration for the context used to create the HTTP request for a refresh of
-	// the JWKs.
-	defaultRefreshTimeout = time.Minute
-)
-
 // getKeySet loads the JWKs at the given URL.
 func getKeySet(config Config) (jwks *keySet, err error) {
 
@@ -154,15 +147,15 @@ func (j *keySet) refresh() (err error) {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	if j.ctx != nil {
-		ctx, cancel = context.WithTimeout(j.ctx, *j.refreshTimeout)
+		ctx, cancel = context.WithTimeout(j.ctx, *j.config.KeyRefreshTimeout)
 	} else {
-		ctx, cancel = context.WithTimeout(context.Background(), *j.refreshTimeout)
+		ctx, cancel = context.WithTimeout(context.Background(), *j.config.KeyRefreshTimeout)
 	}
 	defer cancel()
 
 	// Create the HTTP request.
 	var req *http.Request
-	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, j.jwksURL, bytes.NewReader(nil)); err != nil {
+	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, j.config.KeySetUrl, bytes.NewReader(nil)); err != nil {
 		return err
 	}
 

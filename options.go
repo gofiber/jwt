@@ -34,25 +34,3 @@ type Options struct {
 	// then cause potentially high network usage proportional to X.
 	RefreshUnknownKID *bool
 }
-
-// applyOptions applies the given options to the given JWKs.
-func applyOptions(jwks *keySet, options Options) {
-	if options.Client != nil {
-		jwks.client = options.Client
-	}
-	if options.RefreshErrorHandler != nil {
-		jwks.refreshErrorHandler = options.RefreshErrorHandler
-	}
-	if options.RefreshInterval != nil {
-		jwks.refreshInterval = options.RefreshInterval
-	}
-	if options.RefreshRateLimit != nil {
-		jwks.refreshRateLimit = options.RefreshRateLimit
-	}
-	if options.RefreshTimeout != nil {
-		jwks.refreshTimeout = options.RefreshTimeout
-	}
-	if options.RefreshUnknownKID != nil {
-		jwks.refreshUnknownKID = *options.RefreshUnknownKID
-	}
-}

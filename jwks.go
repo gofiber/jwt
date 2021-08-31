@@ -45,7 +45,6 @@ type keySet struct {
 	refreshInterval     *time.Duration
 	refreshRateLimit    *time.Duration
 	refreshRequests     chan context.CancelFunc
-	refreshTimeout      *time.Duration
 	refreshUnknownKID   bool
 }
 

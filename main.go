@@ -63,6 +63,8 @@ func New(config ...Config) fiber.Handler {
 	}
 }
 
+// initCfg function will check correctness of supplied configuration
+// and will complement it with default values instead of missing ones
 func initCfg(config []Config) (cfg Config) {
 	if len(config) > 0 {
 		cfg = config[0]
@@ -112,6 +114,8 @@ func initCfg(config []Config) (cfg Config) {
 	return cfg
 }
 
+// initExtractors function will create a slice of functions which will be used
+// for token sarch  and will perform extraction of the value
 func initExtractors(cfg Config) []jwtExtractor {
 	// Initialize
 	extractors := make([]jwtExtractor, 0)

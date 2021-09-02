@@ -22,25 +22,9 @@ var (
 
 // New ...
 func New(config ...Config) fiber.Handler {
-	cfg := initConfiguration(config)
+	cfg := initCfg(config)
 
-	// Initialize
-	extractors := make([]func(c *fiber.Ctx) (string, error), 0)
-	rootParts := strings.Split(cfg.TokenLookup, ",")
-	for _, rootPart := range rootParts {
-		parts := strings.Split(strings.TrimSpace(rootPart), ":")
-
-		switch parts[0] {
-		case "header":
-			extractors = append(extractors, jwtFromHeader(parts[1], cfg.AuthScheme))
-		case "query":
-			extractors = append(extractors, jwtFromQuery(parts[1]))
-		case "param":
-			extractors = append(extractors, jwtFromParam(parts[1]))
-		case "cookie":
-			extractors = append(extractors, jwtFromCookie(parts[1]))
-		}
-	}
+	extractors := initExtractors(cfg)
 
 	// Return middleware handler
 	return func(c *fiber.Ctx) error {
@@ -79,7 +63,7 @@ func New(config ...Config) fiber.Handler {
 	}
 }
 
-func initConfiguration(config []Config) (cfg Config) {
+func initCfg(config []Config) (cfg Config) {
 	if len(config) > 0 {
 		cfg = config[0]
 	}
@@ -126,4 +110,25 @@ func initConfiguration(config []Config) (cfg Config) {
 		cfg.keyFunc = jwtKeyFunc(cfg)
 	}
 	return cfg
+}
+
+func initExtractors(cfg Config) []jwtExtractor {
+	// Initialize
+	extractors := make([]jwtExtractor, 0)
+	rootParts := strings.Split(cfg.TokenLookup, ",")
+	for _, rootPart := range rootParts {
+		parts := strings.Split(strings.TrimSpace(rootPart), ":")
+
+		switch parts[0] {
+		case "header":
+			extractors = append(extractors, jwtFromHeader(parts[1], cfg.AuthScheme))
+		case "query":
+			extractors = append(extractors, jwtFromQuery(parts[1]))
+		case "param":
+			extractors = append(extractors, jwtFromParam(parts[1]))
+		case "cookie":
+			extractors = append(extractors, jwtFromCookie(parts[1]))
+		}
+	}
+	return extractors
 }

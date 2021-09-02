@@ -9,6 +9,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+type jwtExtractor func(c *fiber.Ctx) (string, error)
+
 // jwtKeyFunc returns a function that returns signing key for given token.
 func jwtKeyFunc(config Config) jwt.Keyfunc {
 	return func(t *jwt.Token) (interface{}, error) {

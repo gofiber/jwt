@@ -22,53 +22,7 @@ var (
 
 // New ...
 func New(config ...Config) fiber.Handler {
-	// Init config
-	var cfg Config
-	if len(config) > 0 {
-		cfg = config[0]
-	}
-	if cfg.SuccessHandler == nil {
-		cfg.SuccessHandler = func(c *fiber.Ctx) error {
-			return c.Next()
-		}
-	}
-	if cfg.ErrorHandler == nil {
-		cfg.ErrorHandler = func(c *fiber.Ctx, err error) error {
-			if err.Error() == "Missing or malformed JWT" {
-				return c.Status(fiber.StatusBadRequest).SendString("Missing or malformed JWT")
-			}
-			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
-		}
-	}
-	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" {
-		panic("Fiber: JWT middleware requires signing key or url where to download one")
-	}
-	if cfg.SigningMethod == "" && cfg.KeySetURL == "" {
-		cfg.SigningMethod = "HS256"
-	}
-	if cfg.ContextKey == "" {
-		cfg.ContextKey = "user"
-	}
-	if cfg.Claims == nil {
-		cfg.Claims = jwt.MapClaims{}
-	}
-	if cfg.TokenLookup == "" {
-		cfg.TokenLookup = "header:" + fiber.HeaderAuthorization
-	}
-	if cfg.AuthScheme == "" {
-		cfg.AuthScheme = "Bearer"
-	}
-	if cfg.KeyRefreshTimeout == nil {
-		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
-	}
-	if cfg.KeySetURL != "" {
-		jwks := &KeySet{
-			Config: &cfg,
-		}
-		cfg.keyFunc = jwks.keyFunc()
-	} else {
-		cfg.keyFunc = jwtKeyFunc(cfg)
-	}
+	cfg := initConfiguration(config)
 
 	// Initialize
 	extractors := make([]func(c *fiber.Ctx) (string, error), 0)
@@ -123,4 +77,53 @@ func New(config ...Config) fiber.Handler {
 		}
 		return cfg.ErrorHandler(c, err)
 	}
+}
+
+func initConfiguration(config []Config) (cfg Config) {
+	if len(config) > 0 {
+		cfg = config[0]
+	}
+	if cfg.SuccessHandler == nil {
+		cfg.SuccessHandler = func(c *fiber.Ctx) error {
+			return c.Next()
+		}
+	}
+	if cfg.ErrorHandler == nil {
+		cfg.ErrorHandler = func(c *fiber.Ctx, err error) error {
+			if err.Error() == "Missing or malformed JWT" {
+				return c.Status(fiber.StatusBadRequest).SendString("Missing or malformed JWT")
+			}
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
+		}
+	}
+	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" {
+		panic("Fiber: JWT middleware requires signing key or url where to download one")
+	}
+	if cfg.SigningMethod == "" && cfg.KeySetURL == "" {
+		cfg.SigningMethod = "HS256"
+	}
+	if cfg.ContextKey == "" {
+		cfg.ContextKey = "user"
+	}
+	if cfg.Claims == nil {
+		cfg.Claims = jwt.MapClaims{}
+	}
+	if cfg.TokenLookup == "" {
+		cfg.TokenLookup = "header:" + fiber.HeaderAuthorization
+	}
+	if cfg.AuthScheme == "" {
+		cfg.AuthScheme = "Bearer"
+	}
+	if cfg.KeyRefreshTimeout == nil {
+		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
+	}
+	if cfg.KeySetURL != "" {
+		jwks := &KeySet{
+			Config: &cfg,
+		}
+		cfg.keyFunc = jwks.keyFunc()
+	} else {
+		cfg.keyFunc = jwtKeyFunc(cfg)
+	}
+	return cfg
 }

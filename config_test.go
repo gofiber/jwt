@@ -5,6 +5,8 @@ import (
 )
 
 func TestPanicOnMissingConfiguration(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		// Assert
 		if err := recover(); err == nil {
@@ -16,10 +18,12 @@ func TestPanicOnMissingConfiguration(t *testing.T) {
 	config := make([]Config, 0)
 
 	// Act
-	initCfg(config)
+	makeCfg(config)
 }
 
 func TestDefaultConfiguration(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		// Assert
 		if err := recover(); err != nil {
@@ -33,7 +37,7 @@ func TestDefaultConfiguration(t *testing.T) {
 	})
 
 	// Act
-	cfg := initCfg(config)
+	cfg := makeCfg(config)
 
 	// Assert
 	if cfg.SigningMethod != hs256 {
@@ -55,6 +59,8 @@ func TestDefaultConfiguration(t *testing.T) {
 }
 
 func TestExtractorsInitialization(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		// Assert
 		if err := recover(); err != nil {
@@ -69,7 +75,7 @@ func TestExtractorsInitialization(t *testing.T) {
 	}
 
 	// Act
-	extractors := initExtractors(cfg)
+	extractors := getExtractors(cfg)
 
 	// Assert
 	if len(extractors) != 4 {

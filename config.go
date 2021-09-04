@@ -1,6 +1,7 @@
 package jwtware
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -101,4 +102,78 @@ type Config struct {
 	AuthScheme string
 
 	keyFunc jwt.Keyfunc
+}
+
+// makeCfg function will check correctness of supplied configuration
+// and will complement it with default values instead of missing ones
+func makeCfg(config []Config) (cfg Config) {
+	if len(config) > 0 {
+		cfg = config[0]
+	}
+	if cfg.SuccessHandler == nil {
+		cfg.SuccessHandler = func(c *fiber.Ctx) error {
+			return c.Next()
+		}
+	}
+	if cfg.ErrorHandler == nil {
+		cfg.ErrorHandler = func(c *fiber.Ctx, err error) error {
+			if err.Error() == "Missing or malformed JWT" {
+				return c.Status(fiber.StatusBadRequest).SendString("Missing or malformed JWT")
+			}
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
+		}
+	}
+	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" {
+		panic("Fiber: JWT middleware requires signing key or url where to download one")
+	}
+	if cfg.SigningMethod == "" && cfg.KeySetURL == "" {
+		cfg.SigningMethod = "HS256"
+	}
+	if cfg.ContextKey == "" {
+		cfg.ContextKey = "user"
+	}
+	if cfg.Claims == nil {
+		cfg.Claims = jwt.MapClaims{}
+	}
+	if cfg.TokenLookup == "" {
+		cfg.TokenLookup = defaultTokenLookup
+	}
+	if cfg.AuthScheme == "" {
+		cfg.AuthScheme = "Bearer"
+	}
+	if cfg.KeyRefreshTimeout == nil {
+		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
+	}
+	if cfg.KeySetURL != "" {
+		jwks := &KeySet{
+			Config: &cfg,
+		}
+		cfg.keyFunc = jwks.keyFunc()
+	} else {
+		cfg.keyFunc = jwtKeyFunc(cfg)
+	}
+	return cfg
+}
+
+// getExtractors function will create a slice of functions which will be used
+// for token sarch  and will perform extraction of the value
+func (cfg *Config) getExtractors() []jwtExtractor {
+	// Initialize
+	extractors := make([]jwtExtractor, 0)
+	rootParts := strings.Split(cfg.TokenLookup, ",")
+	for _, rootPart := range rootParts {
+		parts := strings.Split(strings.TrimSpace(rootPart), ":")
+
+		switch parts[0] {
+		case "header":
+			extractors = append(extractors, jwtFromHeader(parts[1], cfg.AuthScheme))
+		case "query":
+			extractors = append(extractors, jwtFromQuery(parts[1]))
+		case "param":
+			extractors = append(extractors, jwtFromParam(parts[1]))
+		case "cookie":
+			extractors = append(extractors, jwtFromCookie(parts[1]))
+		}
+	}
+	return extractors
 }

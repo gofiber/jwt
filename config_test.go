@@ -75,7 +75,7 @@ func TestExtractorsInitialization(t *testing.T) {
 	}
 
 	// Act
-	extractors := getExtractors(cfg)
+	extractors := cfg.getExtractors()
 
 	// Assert
 	if len(extractors) != 4 {

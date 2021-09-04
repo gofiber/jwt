@@ -2,11 +2,7 @@ package jwtware
 
 import (
 	"testing"
-
-	"github.com/gofiber/fiber/v2"
 )
-
-var defaultTokenLookup = "header:" + fiber.HeaderAuthorization
 
 func TestPanicOnMissingConfiguration(t *testing.T) {
 	defer func() {

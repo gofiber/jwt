@@ -18,6 +18,8 @@ var (
 	// defaultRefreshTimeout is the default duration for the context used to create the HTTP request for a refresh of
 	// the JWKs.
 	defaultKeyRefreshTimeout = time.Minute
+
+	defaultTokenLookup = "header:" + fiber.HeaderAuthorization
 )
 
 // New ...
@@ -95,7 +97,7 @@ func initCfg(config []Config) (cfg Config) {
 		cfg.Claims = jwt.MapClaims{}
 	}
 	if cfg.TokenLookup == "" {
-		cfg.TokenLookup = "header:" + fiber.HeaderAuthorization
+		cfg.TokenLookup = defaultTokenLookup
 	}
 	if cfg.AuthScheme == "" {
 		cfg.AuthScheme = "Bearer"

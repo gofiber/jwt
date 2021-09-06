@@ -42,7 +42,6 @@ func New(config ...Config) fiber.Handler {
 				break
 			}
 		}
-
 		if err != nil {
 			return cfg.ErrorHandler(c, err)
 		}

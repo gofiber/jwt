@@ -40,7 +40,7 @@ func TestDefaultConfiguration(t *testing.T) {
 	cfg := makeCfg(config)
 
 	// Assert
-	if cfg.SigningMethod != hs256 {
+	if cfg.SigningMethod != HS256 {
 		t.Fatalf("Default signing method should be 'HS256'")
 	}
 	if cfg.ContextKey != "user" {

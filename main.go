@@ -45,7 +45,7 @@ func New(config ...Config) fiber.Handler {
 		if err != nil {
 			return cfg.ErrorHandler(c, err)
 		}
-		token := new(jwt.Token)
+		var token *jwt.Token
 
 		if _, ok := cfg.Claims.(jwt.MapClaims); ok {
 			token, err = jwt.Parse(auth, cfg.keyFunc)

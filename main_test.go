@@ -204,7 +204,7 @@ func TestJwkFromServer(t *testing.T) {
 	}
 
 	// Create the HTTP test server.
-	server := httptest.NewServer(http.FileServer(http.FS(os.DirFS(tempDir))))
+	server := httptest.NewServer(http.FileServer(http.Dir(tempDir)))
 	defer server.Close()
 
 	// Iterate through the test cases.

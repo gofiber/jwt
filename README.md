@@ -41,6 +41,13 @@ jwtware.New(config ...jwtware.Config) func(*fiber.Ctx) error
 | Claims | `jwt.Claim` | Claims are extendable claims data defining token content. | `jwt.MapClaims{}` |
 | TokenLookup | `string` | TokenLookup is a string in the form of `<source>:<name>` that is used | `"header:Authorization"` |
 | AuthScheme | `string` |AuthScheme to be used in the Authorization header. | `"Bearer"` |
+| KeySetURL | `string` |KeySetURL location of JSON file with signing keys. | `""` |
+| KeyRefreshSuccessHandler | `func(j *KeySet)` |KeyRefreshSuccessHandler defines a function which is executed for a valid refresh of signing keys.| `nil` |
+| KeyRefreshErrorHandler | `func(j *KeySet, err error)` |KeyRefreshErrorHandler defines a function which is executed for an invalid refresh of signing keys. | `nil` |
+| KeyRefreshInterval | `*time.Duration` |KeyRefreshInterval is the duration to refresh the JWKs in the background via a new HTTP request. | `nil` |
+| KeyRefreshRateLimit | `*time.Duration` |KeyRefreshRateLimit limits the rate at which refresh requests are granted.  | `nil` |
+| KeyRefreshTimeout | `*time.Duration` |KeyRefreshTimeout is the duration for the context used to create the HTTP request for a refresh of the JWKs. | `1min` |
+| KeyRefreshUnknownKID | `bool` |KeyRefreshUnknownKID indicates that the JWKs refresh request will occur every time a kid that isn't cached is seen. | `false` |
 
 
 ### HS256 Example
@@ -233,3 +240,6 @@ func restricted(c *fiber.Ctx) error {
 
 ### RS256 Test
 The RS256 is actually identical to the HS256 test above.
+
+### JWKs Test
+The tests are identical to basic `JWT` tests above, with exception that `KeySetURL` to valid public keys collection in JSON format should be supplied.

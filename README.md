@@ -92,14 +92,14 @@ func login(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
-	// Create token
-	token := jwt.New(jwt.SigningMethodHS256)
-
 	// Set claims
 	claims := token.Claims.(jwt.MapClaims)
 	claims["name"] = "John Doe"
 	claims["admin"] = true
 	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+	// Create token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Generate encoded token and send it as response.
 	t, err := token.SignedString([]byte("secret"))
@@ -206,14 +206,14 @@ func login(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
-	// Create token
-	token := jwt.New(jwt.SigningMethodRS256)
-
 	// Set claims
 	claims := token.Claims.(jwt.MapClaims)
 	claims["name"] = "John Doe"
 	claims["admin"] = true
 	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+	// Create token
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 
 	// Generate encoded token and send it as response.
 	t, err := token.SignedString(privateKey)

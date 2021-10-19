@@ -48,6 +48,7 @@ jwtware.New(config ...jwtware.Config) func(*fiber.Ctx) error
 | KeyRefreshRateLimit | `*time.Duration` |KeyRefreshRateLimit limits the rate at which refresh requests are granted.  | `nil` |
 | KeyRefreshTimeout | `*time.Duration` |KeyRefreshTimeout is the duration for the context used to create the HTTP request for a refresh of the JWKs. | `1min` |
 | KeyRefreshUnknownKID | `bool` |KeyRefreshUnknownKID indicates that the JWKs refresh request will occur every time a kid that isn't cached is seen. | `false` |
+| KeyFunc | `func() jwt.Keyfunc` |KeyFunc defines a user-defined function that supplies the public key for a token validation. | `jwtKeyFunc` |
 
 
 ### HS256 Example
@@ -243,3 +244,53 @@ The RS256 is actually identical to the HS256 test above.
 
 ### JWKs Test
 The tests are identical to basic `JWT` tests above, with exception that `KeySetURL` to valid public keys collection in JSON format should be supplied.
+
+### Custom KeyFunc example
+
+KeyFunc defines a user-defined function that supplies the public key for a token validation.
+The function shall take care of verifying the signing algorithm and selecting the proper key.
+A user-defined KeyFunc can be useful if tokens are issued by an external party.
+
+When a user-defined KeyFunc is provided, SigningKey, SigningKeys, and SigningMethod are ignored.
+This is one of the three options to provide a token validation key.
+The order of precedence is a user-defined KeyFunc, SigningKeys and SigningKey.
+Required if neither SigningKeys nor SigningKey is provided.
+Default to an internal implementation verifying the signing algorithm and selecting the proper key.
+
+```go
+package main
+
+import (
+	"fmt"
+  "github.com/gofiber/fiber/v2"
+
+  jwtware "github.com/gofiber/jwt/v3"
+  "github.com/golang-jwt/jwt/v4"
+)
+
+func main() {
+	app := fiber.New()
+
+	app.Use(jwtware.New(jwtware.Config{
+		KeyFunc: customKeyFunc(),
+	}))
+
+	app.Get("/ok", func(c *fiber.Ctx) error {
+		return c.SendString("OK")
+	})
+}
+
+func customKeyFunc() jwt.Keyfunc {
+	return func(t *jwt.Token) (interface{}, error) {
+		// Always check the signing method
+		if t.Method.Alg() != jwtware.HS256 {
+			return nil, fmt.Errorf("Unexpected jwt signing method=%v", t.Header["alg"])
+		}
+
+		// TODO custom implementation of loading signing key like from a database
+    signingKey := "secret"
+
+		return []byte(signingKey), nil
+	}
+}
+```

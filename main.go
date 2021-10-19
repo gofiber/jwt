@@ -48,11 +48,11 @@ func New(config ...Config) fiber.Handler {
 		var token *jwt.Token
 
 		if _, ok := cfg.Claims.(jwt.MapClaims); ok {
-			token, err = jwt.Parse(auth, cfg.keyFunc)
+			token, err = jwt.Parse(auth, cfg.KeyFunc)
 		} else {
 			t := reflect.ValueOf(cfg.Claims).Type().Elem()
 			claims := reflect.New(t).Interface().(jwt.Claims)
-			token, err = jwt.ParseWithClaims(auth, claims, cfg.keyFunc)
+			token, err = jwt.ParseWithClaims(auth, claims, cfg.KeyFunc)
 		}
 		if err == nil && token.Valid {
 			// Store user information from token into context.

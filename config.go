@@ -101,7 +101,16 @@ type Config struct {
 	// Optional. Default: "Bearer".
 	AuthScheme string
 
-	keyFunc jwt.Keyfunc
+	// KeyFunc defines a user-defined function that supplies the public key for a token validation.
+	// The function shall take care of verifying the signing algorithm and selecting the proper key.
+	// A user-defined KeyFunc can be useful if tokens are issued by an external party.
+	//
+	// When a user-defined KeyFunc is provided, SigningKey, SigningKeys, and SigningMethod are ignored.
+	// This is one of the three options to provide a token validation key.
+	// The order of precedence is a user-defined KeyFunc, SigningKeys and SigningKey.
+	// Required if neither SigningKeys nor SigningKey is provided.
+	// Default to an internal implementation verifying the signing algorithm and selecting the proper key.
+	KeyFunc jwt.Keyfunc
 }
 
 // makeCfg function will check correctness of supplied configuration
@@ -123,7 +132,7 @@ func makeCfg(config []Config) (cfg Config) {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
 		}
 	}
-	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" {
+	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" && cfg.KeyFunc == nil {
 		panic("Fiber: JWT middleware requires signing key or url where to download one")
 	}
 	if cfg.SigningMethod == "" && cfg.KeySetURL == "" {
@@ -144,13 +153,15 @@ func makeCfg(config []Config) (cfg Config) {
 	if cfg.KeyRefreshTimeout == nil {
 		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
 	}
-	if cfg.KeySetURL != "" {
-		jwks := &KeySet{
-			Config: &cfg,
+	if cfg.KeyFunc == nil {
+		if cfg.KeySetURL != "" {
+			jwks := &KeySet{
+				Config: &cfg,
+			}
+			cfg.KeyFunc = jwks.keyFunc()
+		} else {
+			cfg.KeyFunc = jwtKeyFunc(cfg)
 		}
-		cfg.keyFunc = jwks.keyFunc()
-	} else {
-		cfg.keyFunc = jwtKeyFunc(cfg)
 	}
 	return cfg
 }

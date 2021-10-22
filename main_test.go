@@ -1,6 +1,8 @@
 package jwtware_test
 
 import (
+	"fmt"
+	"github.com/golang-jwt/jwt/v4"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -229,5 +231,49 @@ func TestJwkFromServer(t *testing.T) {
 		// Assert
 		utils.AssertEqual(t, nil, err)
 		utils.AssertEqual(t, 200, resp.StatusCode)
+	}
+}
+
+func TestCustomKeyFunc(t *testing.T) {
+	t.Parallel()
+
+	defer func() {
+		// Assert
+		if err := recover(); err != nil {
+			t.Fatalf("Middleware should not panic")
+		}
+	}()
+
+	test := hamac[0]
+	// Arrange
+	app := fiber.New()
+
+	app.Use(jwtware.New(jwtware.Config{
+		KeyFunc: customKeyFunc(),
+	}))
+
+	app.Get("/ok", func(c *fiber.Ctx) error {
+		return c.SendString("OK")
+	})
+
+	req := httptest.NewRequest("GET", "/ok", nil)
+	req.Header.Add("Authorization", "Bearer "+test.Token)
+
+	// Act
+	resp, err := app.Test(req)
+
+	// Assert
+	utils.AssertEqual(t, nil, err)
+	utils.AssertEqual(t, 200, resp.StatusCode)
+}
+
+func customKeyFunc() jwt.Keyfunc {
+	return func(t *jwt.Token) (interface{}, error) {
+		// Always check the signing method
+		if t.Method.Alg() != jwtware.HS256 {
+			return nil, fmt.Errorf("Unexpected jwt signing method=%v", t.Header["alg"])
+		}
+
+		return []byte(defaultSigningKey), nil
 	}
 }

@@ -93,11 +93,12 @@ func login(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
-	// Set claims
-	claims := token.Claims.(jwt.MapClaims)
-	claims["name"] = "John Doe"
-	claims["admin"] = true
-	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+	// Create the Claims
+	claims := jwt.MapClaims{
+		"name":  "John Doe",
+		"admin": true,
+		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+	}
 
 	// Create token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -207,11 +208,12 @@ func login(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
-	// Set claims
-	claims := token.Claims.(jwt.MapClaims)
-	claims["name"] = "John Doe"
-	claims["admin"] = true
-	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+	// Create the Claims
+	claims := jwt.MapClaims{
+		"name":  "John Doe",
+		"admin": true,
+		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+	}
 
 	// Create token
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

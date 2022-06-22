@@ -280,7 +280,7 @@ func (j *KeySet) startRefreshing() {
 	}
 }
 
-// refresh does an HTTP GET on the JWKs URL to rebuild the JWKs.
+// refresh does an HTTP GET on the JWKs URLs in parallel to rebuild the JWKs.
 func (j *KeySet) refresh() (err error) {
 	// Create a context for the request.
 	var ctx context.Context
@@ -293,28 +293,33 @@ func (j *KeySet) refresh() (err error) {
 	defer cancel()
 
 	// Create the HTTP request.
-	var req *http.Request
-	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, j.Config.KeySetURL, bytes.NewReader(nil)); err != nil {
-		return err
-	}
-
-	// Get the JWKs as JSON from the given URL.
-	var resp *http.Response
-	if resp, err = j.client.Do(req); err != nil {
-		return err
-	}
-	defer resp.Body.Close() // Ignore any error.
-
-	// Read the raw JWKs from the body of the response.
-	var jwksBytes []byte
-	if jwksBytes, err = ioutil.ReadAll(resp.Body); err != nil {
-		return err
-	}
-
-	// Create an updated JWKs.
 	var keys map[string]*rawJWK
-	if keys, err = parseKeySet(jwksBytes); err != nil {
-		return err
+	for _, url := range j.Config.KeySetURLs {
+		var req *http.Request
+		if req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, bytes.NewReader(nil)); err != nil {
+			return err
+		}
+
+		// Get the JWKs as JSON from the given URL.
+		var resp *http.Response
+		if resp, err = j.client.Do(req); err != nil {
+			return err
+		}
+
+		// Read the raw JWKs from the body of the response.
+		var jwksBytes []byte
+		if jwksBytes, err = ioutil.ReadAll(resp.Body); err != nil {
+			resp.Body.Close() //manually close here
+			return err
+		}
+		resp.Body.Close() // ignore any error, don't use defer as we are in a for loop
+
+		// Create an updated JWKs.
+		if urlKeys, urlErr := parseKeySet(jwksBytes); urlErr != nil {
+			return urlErr
+		} else if urlKeys != nil {
+			keys = mergemap(keys, urlKeys)
+		}
 	}
 
 	// Lock the JWKs for async safe usage.
@@ -333,4 +338,19 @@ func (j *KeySet) StopRefreshing() {
 	if j.cancel != nil {
 		j.cancel()
 	}
+}
+
+//creates a new map with values of origMap overwritten by those in newMap
+func mergemap(origMap, newMap map[string]*rawJWK) map[string]*rawJWK {
+	var mp map[string]*rawJWK
+	if len(origMap) > 0 || len(newMap) > 0 {
+		mp = make(map[string]*rawJWK)
+	}
+	for k, v := range origMap {
+		mp[k] = v
+	}
+	for k, v := range newMap {
+		mp[k] = v
+	}
+	return mp
 }

@@ -36,12 +36,18 @@ type Config struct {
 	SigningKey interface{}
 
 	// Map of signing keys to validate token with kid field usage.
-	// Required. This, SigningKey or KeySetUrl.
+	// Required. This, SigningKey or KeySetUrl(deprecated) or KeySetUrls.
 	SigningKeys map[string]interface{}
 
 	// URL where set of private keys could be downloaded.
-	// Required. This, SigningKey or SigningKeys.
+	// Required. This, SigningKey or SigningKeys or KeySetURLs
+	// Deprecated, use KeySetURLs
 	KeySetURL string
+
+	// URLs where set of private keys could be downloaded.
+	// Required. This, SigningKey or SigningKeys or KeySetURL(deprecated)
+	// duplicate key entries are overwritten as encountered across urls
+	KeySetURLs []string
 
 	// KeyRefreshSuccessHandler defines a function which is executed on successful refresh of key set.
 	// Optional. Default: nil
@@ -54,24 +60,24 @@ type Config struct {
 	// KeyRefreshInterval is the duration to refresh the JWKs in the background via a new HTTP request. If this is not nil,
 	// then a background refresh will be requested in a separate goroutine at this interval until the JWKs method
 	// EndBackground is called.
-	// Optional. If set, the value will be used only if `KeySetUrl` is also present
+	// Optional. If set, the value will be used only if `KeySetUrl`(deprecated) or `KeySetUrls` is also present
 	KeyRefreshInterval *time.Duration
 
 	// KeyRefreshRateLimit limits the rate at which refresh requests are granted. Only one refresh request can be queued
 	// at a time any refresh requests received while there is already a queue are ignored. It does not make sense to
 	// have RefreshInterval's value shorter than this.
-	// Optional. If set, the value will be used only if `KeySetUrl` is also present
+	// Optional. If set, the value will be used only if `KeySetUrl`(deprecated) or `KeySetUrls` is also present
 	KeyRefreshRateLimit *time.Duration
 
 	// KeyRefreshTimeout is the duration for the context used to create the HTTP request for a refresh of the JWKs. This
 	// defaults to one minute. This is only effectual if RefreshInterval is not nil.
-	// Optional. If set, the value will be used only if `KeySetUrl` is also present
+	// Optional. If set, the value will be used only if `KeySetUrl`(deprecated) or `KeySetUrls` is also present
 	KeyRefreshTimeout *time.Duration
 
 	// KeyRefreshUnknownKID indicates that the JWKs refresh request will occur every time a kid that isn't cached is seen.
 	// Without specifying a RefreshInterval a malicious client could self-sign X JWTs, send them to this service,
 	// then cause potentially high network usage proportional to X.
-	// Optional. If set, the value will be used only if `KeySetUrl` is also present
+	// Optional. If set, the value will be used only if `KeySetUrl`(deprecated) or `KeySetUrls` is also present
 	KeyRefreshUnknownKID *bool
 
 	// Signing method, used to check token signing method.
@@ -132,10 +138,10 @@ func makeCfg(config []Config) (cfg Config) {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
 		}
 	}
-	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" && cfg.KeyFunc == nil {
+	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" && len(cfg.KeySetURLs) == 0 && cfg.KeyFunc == nil {
 		panic("Fiber: JWT middleware requires signing key or url where to download one")
 	}
-	if cfg.SigningMethod == "" && cfg.KeySetURL == "" {
+	if cfg.SigningMethod == "" && cfg.KeySetURL == "" && len(cfg.KeySetURLs) == 0 {
 		cfg.SigningMethod = "HS256"
 	}
 	if cfg.ContextKey == "" {
@@ -153,8 +159,11 @@ func makeCfg(config []Config) (cfg Config) {
 	if cfg.KeyRefreshTimeout == nil {
 		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
 	}
+	if cfg.KeySetURL != "" {
+		cfg.KeySetURLs = append(cfg.KeySetURLs, cfg.KeySetURL)
+	}
 	if cfg.KeyFunc == nil {
-		if cfg.KeySetURL != "" {
+		if cfg.KeySetURL != "" || len(cfg.KeySetURLs) > 0 {
 			jwks := &KeySet{
 				Config: &cfg,
 			}

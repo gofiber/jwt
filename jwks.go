@@ -151,7 +151,7 @@ func (j *KeySet) getKey(kid string) (jsonKey *rawJWK, err error) {
 	// Check if the key was present.
 	if !ok {
 		// Check to see if configured to refresh on unknown kid.
-		if *j.Config.KeyRefreshUnknownKID {
+		if j.Config.KeyRefreshUnknownKID != nil && *j.Config.KeyRefreshUnknownKID {
 			// Create a context for refreshing the JWKs.
 			ctx, cancel := context.WithCancel(j.ctx)
 

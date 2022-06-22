@@ -40,8 +40,14 @@ type Config struct {
 	SigningKeys map[string]interface{}
 
 	// URL where set of private keys could be downloaded.
-	// Required. This, SigningKey or SigningKeys.
+	// Required. This, SigningKey or SigningKeys or KeySetURLs
+	// Deprecated, use KeySetURLs
 	KeySetURL string
+
+	// URL where set of private keys could be downloaded.
+	// Required. This, SigningKey or SigningKeys or KeySetURL(deprecated)
+	// duplicate key entries are overwritten as encountered across urls
+	KeySetURLs []string
 
 	// KeyRefreshSuccessHandler defines a function which is executed on successful refresh of key set.
 	// Optional. Default: nil
@@ -132,10 +138,10 @@ func makeCfg(config []Config) (cfg Config) {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
 		}
 	}
-	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" && cfg.KeyFunc == nil {
+	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" && len(cfg.KeySetURLs) == 0 && cfg.KeyFunc == nil {
 		panic("Fiber: JWT middleware requires signing key or url where to download one")
 	}
-	if cfg.SigningMethod == "" && cfg.KeySetURL == "" {
+	if cfg.SigningMethod == "" && cfg.KeySetURL == "" && len(cfg.KeySetURLs) == 0 {
 		cfg.SigningMethod = "HS256"
 	}
 	if cfg.ContextKey == "" {
@@ -153,8 +159,11 @@ func makeCfg(config []Config) (cfg Config) {
 	if cfg.KeyRefreshTimeout == nil {
 		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
 	}
+	if cfg.KeySetURL != "" {
+		cfg.KeySetURLs = append(cfg.KeySetURLs, cfg.KeySetURL)
+	}
 	if cfg.KeyFunc == nil {
-		if cfg.KeySetURL != "" {
+		if cfg.KeySetURL != "" || len(cfg.KeySetURLs) > 0 {
 			jwks := &KeySet{
 				Config: &cfg,
 			}

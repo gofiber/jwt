@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -309,10 +310,14 @@ func (j *KeySet) refresh() (err error) {
 		// Read the raw JWKs from the body of the response.
 		var jwksBytes []byte
 		if jwksBytes, err = ioutil.ReadAll(resp.Body); err != nil {
-			resp.Body.Close() //manually close here
+			if cErr := resp.Body.Close(); cErr != nil {
+				log.Printf("error closing response body: %s", cErr.Error())
+			}
 			return err
 		}
-		resp.Body.Close() // ignore any error, don't use defer as we are in a for loop
+		if cErr := resp.Body.Close(); cErr != nil {
+			log.Printf("error closing response body: %s", cErr.Error())
+		}
 
 		// Create an updated JWKs.
 		if urlKeys, urlErr := parseKeySet(jwksBytes); urlErr != nil {

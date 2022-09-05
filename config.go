@@ -138,10 +138,13 @@ func makeCfg(config []Config) (cfg Config) {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
 		}
 	}
-	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && cfg.KeySetURL == "" && len(cfg.KeySetURLs) == 0 && cfg.KeyFunc == nil {
+	if cfg.KeySetURL != "" {
+		cfg.KeySetURLs = append(cfg.KeySetURLs, cfg.KeySetURL)
+	}
+	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && len(cfg.KeySetURLs) == 0 && cfg.KeyFunc == nil {
 		panic("Fiber: JWT middleware requires signing key or url where to download one")
 	}
-	if cfg.SigningMethod == "" && cfg.KeySetURL == "" && len(cfg.KeySetURLs) == 0 {
+	if cfg.SigningMethod == "" && len(cfg.KeySetURLs) == 0 {
 		cfg.SigningMethod = "HS256"
 	}
 	if cfg.ContextKey == "" {
@@ -159,11 +162,9 @@ func makeCfg(config []Config) (cfg Config) {
 	if cfg.KeyRefreshTimeout == nil {
 		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
 	}
-	if cfg.KeySetURL != "" {
-		cfg.KeySetURLs = append(cfg.KeySetURLs, cfg.KeySetURL)
-	}
+
 	if cfg.KeyFunc == nil {
-		if cfg.KeySetURL != "" || len(cfg.KeySetURLs) > 0 {
+		if len(cfg.KeySetURLs) > 0 {
 			jwks := &KeySet{
 				Config: &cfg,
 			}

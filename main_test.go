@@ -181,6 +181,7 @@ func TestJwtFromCookie(t *testing.T) {
 }
 
 // TestJWKs performs a table test on the JWKs code.
+//deprecated
 func TestJwkFromServer(t *testing.T) {
 	// Could add a test with an invalid JWKs endpoint.
 	// Create a temporary directory to serve the JWKs from.
@@ -216,6 +217,67 @@ func TestJwkFromServer(t *testing.T) {
 
 		app.Use(jwtware.New(jwtware.Config{
 			KeySetURL: server.URL + "/jwks.json",
+		}))
+
+		app.Get("/ok", func(c *fiber.Ctx) error {
+			return c.SendString("OK")
+		})
+
+		req := httptest.NewRequest("GET", "/ok", nil)
+		req.Header.Add("Authorization", "Bearer "+test.Token)
+
+		// Act
+		resp, err := app.Test(req)
+
+		// Assert
+		utils.AssertEqual(t, nil, err)
+		utils.AssertEqual(t, 200, resp.StatusCode)
+	}
+}
+
+// TestJWKs performs a table test on the JWKs code.
+func TestJwkFromServers(t *testing.T) {
+	// Could add a test with an invalid JWKs endpoint.
+	// Create a temporary directory to serve the JWKs from.
+	tempDir, err := ioutil.TempDir("", "*")
+	if err != nil {
+		t.Errorf("Failed to create a temporary directory.\nError:%s\n", err.Error())
+		t.FailNow()
+	}
+	defer func() {
+		if err = os.RemoveAll(tempDir); err != nil {
+			t.Errorf("Failed to remove temporary directory.\nError:%s\n", err.Error())
+			t.FailNow()
+		}
+	}()
+
+	// Create the JWKs file path.
+	jwksFile := filepath.Join(tempDir, "jwks.json")
+	jwksFile2 := filepath.Join(tempDir, "jwks2.json")
+
+	// Write the empty JWKs.
+	if err = ioutil.WriteFile(jwksFile, []byte(defaultKeySet), 0600); err != nil {
+		t.Errorf("Failed to write JWKs file to temporary directory.\nError:%s\n", err.Error())
+		t.FailNow()
+	}
+
+	// Write the empty JWKs 2.
+	if err = ioutil.WriteFile(jwksFile2, []byte(defaultKeySet), 0600); err != nil {
+		t.Errorf("Failed to write JWKs file to temporary directory.\nError:%s\n", err.Error())
+		t.FailNow()
+	}
+
+	// Create the HTTP test server.
+	server := httptest.NewServer(http.FileServer(http.Dir(tempDir)))
+	defer server.Close()
+
+	// Iterate through the test cases.
+	for _, test := range append(rsa, ecdsa...) {
+		// Arrange
+		app := fiber.New()
+
+		app.Use(jwtware.New(jwtware.Config{
+			KeySetURLs: []string{server.URL + "/jwks.json", server.URL + "/jwks2.json"},
 		}))
 
 		app.Get("/ok", func(c *fiber.Ctx) error {

@@ -3,6 +3,6 @@ module github.com/gofiber/jwt/v3
 go 1.15
 
 require (
-	github.com/gofiber/fiber/v2 v2.38.1
+	github.com/gofiber/fiber/v2 v2.39.0
 	github.com/golang-jwt/jwt/v4 v4.4.2
 )

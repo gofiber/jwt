@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -309,7 +309,7 @@ func (j *KeySet) refresh() (err error) {
 
 		// Read the raw JWKs from the body of the response.
 		var jwksBytes []byte
-		if jwksBytes, err = ioutil.ReadAll(resp.Body); err != nil {
+		if jwksBytes, err = io.ReadAll(resp.Body); err != nil {
 			if cErr := resp.Body.Close(); cErr != nil {
 				log.Printf("error closing response body: %s", cErr.Error())
 			}
@@ -345,7 +345,7 @@ func (j *KeySet) StopRefreshing() {
 	}
 }
 
-//creates a new map with values of origMap overwritten by those in newMap
+// creates a new map with values of origMap overwritten by those in newMap
 func mergemap(origMap, newMap map[string]*rawJWK) map[string]*rawJWK {
 	var mp map[string]*rawJWK
 	if len(origMap) > 0 || len(newMap) > 0 {

@@ -81,4 +81,34 @@ func TestExtractorsInitialization(t *testing.T) {
 	if len(extractors) != 4 {
 		t.Fatalf("Extractors should not be created for invalid lookups")
 	}
+	if cfg.AuthScheme != "" {
+		t.Fatal("AuthScheme should be \"\"")
+	}
+}
+
+func TestCustomTokenLookup(t *testing.T) {
+	t.Parallel()
+
+	defer func() {
+		// Assert
+		if err := recover(); err != nil {
+			t.Fatalf("Middleware should not panic")
+		}
+	}()
+
+	// Arrange
+	lookup := `header:X-Auth`
+	scheme := "Token"
+	cfg := Config{
+		SigningKey:  "",
+		TokenLookup: lookup,
+		AuthScheme:  scheme,
+	}
+
+	if cfg.TokenLookup != lookup {
+		t.Fatalf("TokenLookup should be %s", lookup)
+	}
+	if cfg.AuthScheme != scheme {
+		t.Fatalf("AuthScheme should be %s", scheme)
+	}
 }

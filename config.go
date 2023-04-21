@@ -155,9 +155,10 @@ func makeCfg(config []Config) (cfg Config) {
 	}
 	if cfg.TokenLookup == "" {
 		cfg.TokenLookup = defaultTokenLookup
-	}
-	if cfg.AuthScheme == "" {
-		cfg.AuthScheme = "Bearer"
+		// set AuthScheme as "Bearer" only if TokenLookup is set to default.
+		if cfg.AuthScheme == "" {
+			cfg.AuthScheme = "Bearer"
+		}
 	}
 	if cfg.KeyRefreshTimeout == nil {
 		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout

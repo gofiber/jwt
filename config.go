@@ -1,20 +1,14 @@
 package jwtware
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/MicahParks/keyfunc/v2"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
-
-// KeyRefreshSuccessHandler is a function signature that consumes a set of signing key set.
-// Presence of original signing key set allows to update configuration or stop background refresh.
-type KeyRefreshSuccessHandler func(j *KeySet)
-
-// KeyRefreshErrorHandler is a function signature that consumes a set of signing key set and an error.
-// Presence of original signing key set allows to update configuration or stop background refresh.
-type KeyRefreshErrorHandler func(j *KeySet, err error)
 
 // Config defines the config for JWT middleware
 type Config struct {
@@ -38,47 +32,6 @@ type Config struct {
 	// Map of signing keys to validate token with kid field usage.
 	// Required. This, SigningKey or KeySetUrl(deprecated) or KeySetUrls.
 	SigningKeys map[string]interface{}
-
-	// URL where set of private keys could be downloaded.
-	// Required. This, SigningKey or SigningKeys or KeySetURLs
-	// Deprecated, use KeySetURLs
-	KeySetURL string
-
-	// URLs where set of private keys could be downloaded.
-	// Required. This, SigningKey or SigningKeys or KeySetURL(deprecated)
-	// duplicate key entries are overwritten as encountered across urls
-	KeySetURLs []string
-
-	// KeyRefreshSuccessHandler defines a function which is executed on successful refresh of key set.
-	// Optional. Default: nil
-	KeyRefreshSuccessHandler KeyRefreshSuccessHandler
-
-	// KeyRefreshErrorHandler defines a function which is executed for refresh key set failure.
-	// Optional. Default: nil
-	KeyRefreshErrorHandler KeyRefreshErrorHandler
-
-	// KeyRefreshInterval is the duration to refresh the JWKs in the background via a new HTTP request. If this is not nil,
-	// then a background refresh will be requested in a separate goroutine at this interval until the JWKs method
-	// EndBackground is called.
-	// Optional. If set, the value will be used only if `KeySetUrl`(deprecated) or `KeySetUrls` is also present
-	KeyRefreshInterval *time.Duration
-
-	// KeyRefreshRateLimit limits the rate at which refresh requests are granted. Only one refresh request can be queued
-	// at a time any refresh requests received while there is already a queue are ignored. It does not make sense to
-	// have RefreshInterval's value shorter than this.
-	// Optional. If set, the value will be used only if `KeySetUrl`(deprecated) or `KeySetUrls` is also present
-	KeyRefreshRateLimit *time.Duration
-
-	// KeyRefreshTimeout is the duration for the context used to create the HTTP request for a refresh of the JWKs. This
-	// defaults to one minute. This is only effectual if RefreshInterval is not nil.
-	// Optional. If set, the value will be used only if `KeySetUrl`(deprecated) or `KeySetUrls` is also present
-	KeyRefreshTimeout *time.Duration
-
-	// KeyRefreshUnknownKID indicates that the JWKs refresh request will occur every time a kid that isn't cached is seen.
-	// Without specifying a RefreshInterval a malicious client could self-sign X JWTs, send them to this service,
-	// then cause potentially high network usage proportional to X.
-	// Optional. If set, the value will be used only if `KeySetUrl`(deprecated) or `KeySetUrls` is also present
-	KeyRefreshUnknownKID *bool
 
 	// Signing method, used to check token signing method.
 	// Optional. Default: "HS256".
@@ -107,16 +60,26 @@ type Config struct {
 	// Optional. Default: "Bearer".
 	AuthScheme string
 
-	// KeyFunc defines a user-defined function that supplies the public key for a token validation.
+	// KeyFunc is a function that supplies the public key for JWT cryptographic verification.
 	// The function shall take care of verifying the signing algorithm and selecting the proper key.
-	// A user-defined KeyFunc can be useful if tokens are issued by an external party.
+	// Internally, github.com/MicahParks/keyfunc/v2 package is used project defaults. If you need more customization,
+	// you can provide a jwt.Keyfunc using that package or make your own implementation.
 	//
-	// When a user-defined KeyFunc is provided, SigningKey, SigningKeys, and SigningMethod are ignored.
-	// This is one of the three options to provide a token validation key.
-	// The order of precedence is a user-defined KeyFunc, SigningKeys and SigningKey.
-	// Required if neither SigningKeys nor SigningKey is provided.
-	// Default to an internal implementation verifying the signing algorithm and selecting the proper key.
-	KeyFunc jwt.Keyfunc
+	// This option is mutually exclusive with and takes precedence over JWKSetURLs, SigningKeys, and SigningKey.
+	KeyFunc jwt.Keyfunc // TODO Could be renamed to Keyfunc
+
+	// JWKSetURLs is a slice of HTTP URLs that contain the JSON Web Key Set (JWKS) used to verify the signatures of
+	// JWTs. Use of HTTPS is recommended. The presence of the "kid" field in the JWT header and JWKs is mandatory for
+	// this feature.
+	//
+	// By default, all JWK Sets in this slice will:
+	//   * Refresh every hour.
+	//   * Refresh automatically if a new "kid" is seen in a JWT being verified.
+	//   * Rate limit refreshes to once every 5 minutes.
+	//   * Timeout refreshes after 10 seconds.
+	//
+	// This field is compatible with the SigningKeys field.
+	JWKSetURLs []string
 }
 
 // makeCfg function will check correctness of supplied configuration
@@ -138,13 +101,10 @@ func makeCfg(config []Config) (cfg Config) {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
 		}
 	}
-	if cfg.KeySetURL != "" {
-		cfg.KeySetURLs = append(cfg.KeySetURLs, cfg.KeySetURL)
+	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && len(cfg.JWKSetURLs) == 0 && cfg.KeyFunc == nil {
+		panic("Fiber: JWT middleware requires at least one signing key or JWK Set URL")
 	}
-	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && len(cfg.KeySetURLs) == 0 && cfg.KeyFunc == nil {
-		panic("Fiber: JWT middleware requires signing key or url where to download one")
-	}
-	if cfg.SigningMethod == "" && len(cfg.KeySetURLs) == 0 {
+	if cfg.SigningMethod == "" && len(cfg.JWKSetURLs) == 0 {
 		cfg.SigningMethod = "HS256"
 	}
 	if cfg.ContextKey == "" {
@@ -160,21 +120,72 @@ func makeCfg(config []Config) (cfg Config) {
 			cfg.AuthScheme = "Bearer"
 		}
 	}
-	if cfg.KeyRefreshTimeout == nil {
-		cfg.KeyRefreshTimeout = &defaultKeyRefreshTimeout
-	}
 
 	if cfg.KeyFunc == nil {
-		if len(cfg.KeySetURLs) > 0 {
-			jwks := &KeySet{
-				Config: &cfg,
+		if len(cfg.SigningKeys) > 0 || len(cfg.JWKSetURLs) > 0 {
+			var givenKeys map[string]keyfunc.GivenKey
+			if cfg.SigningKeys != nil {
+				givenKeys = make(map[string]keyfunc.GivenKey, len(cfg.SigningKeys))
+				for kid, key := range cfg.SigningKeys {
+					givenKeys[kid] = keyfunc.NewGivenCustom(key, keyfunc.GivenKeyOptions{}) // TODO User supplied alg?
+				}
 			}
-			cfg.KeyFunc = jwks.keyFunc()
+			if len(cfg.JWKSetURLs) > 0 {
+				var err error
+				if len(cfg.JWKSetURLs) == 1 {
+					cfg.KeyFunc, err = oneKeyfunc(cfg, givenKeys)
+				} else {
+					cfg.KeyFunc, err = multiKeyfunc(givenKeys, cfg.JWKSetURLs)
+				}
+				if err != nil {
+					panic("Failed to create keyfunc from JWK Set URL: " + err.Error()) // TODO Don't panic?
+				}
+			} else {
+				cfg.KeyFunc = keyfunc.NewGiven(givenKeys).Keyfunc
+			}
 		} else {
-			cfg.KeyFunc = jwtKeyFunc(cfg)
+			cfg.KeyFunc = func(token *jwt.Token) (interface{}, error) {
+				return cfg.SigningKey, nil
+			}
 		}
 	}
+
 	return cfg
+}
+
+func oneKeyfunc(cfg Config, givenKeys map[string]keyfunc.GivenKey) (jwt.Keyfunc, error) {
+	jwks, err := keyfunc.Get(cfg.JWKSetURLs[0], keyfuncOptions(givenKeys))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get JWK Set URL: %w", err)
+	}
+	return jwks.Keyfunc, nil
+}
+
+func multiKeyfunc(givenKeys map[string]keyfunc.GivenKey, jwkSetURLs []string) (jwt.Keyfunc, error) {
+	opts := keyfuncOptions(givenKeys)
+	multiple := make(map[string]keyfunc.Options, len(jwkSetURLs))
+	for _, url := range jwkSetURLs {
+		multiple[url] = opts
+	}
+	multiOpts := keyfunc.MultipleOptions{
+		KeySelector: keyfunc.KeySelectorFirst,
+	}
+	multi, err := keyfunc.GetMultiple(multiple, multiOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get multiple JWK Set URLs: %w", err)
+	}
+	return multi.Keyfunc, nil
+}
+
+func keyfuncOptions(givenKeys map[string]keyfunc.GivenKey) keyfunc.Options {
+	return keyfunc.Options{
+		// TODO Add error logger?
+		GivenKeys:         givenKeys,
+		RefreshInterval:   time.Hour,
+		RefreshRateLimit:  time.Minute * 5,
+		RefreshTimeout:    time.Second * 10,
+		RefreshUnknownKID: true,
+	}
 }
 
 // getExtractors function will create a slice of functions which will be used

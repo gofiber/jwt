@@ -2,6 +2,7 @@ package jwtware
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -179,8 +180,10 @@ func multiKeyfunc(givenKeys map[string]keyfunc.GivenKey, jwkSetURLs []string) (j
 
 func keyfuncOptions(givenKeys map[string]keyfunc.GivenKey) keyfunc.Options {
 	return keyfunc.Options{
-		// TODO Add error logger?
-		GivenKeys:         givenKeys,
+		GivenKeys: givenKeys,
+		RefreshErrorHandler: func(err error) {
+			log.Printf("Failed to perform background refresh of JWK Set: %s.", err)
+		},
 		RefreshInterval:   time.Hour,
 		RefreshRateLimit:  time.Minute * 5,
 		RefreshTimeout:    time.Second * 10,

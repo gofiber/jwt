@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/golang-jwt/jwt/v5"
 
-	jwtware "github.com/gofiber/jwt/v3"
+	jwtware "github.com/gofiber/jwt/v4"
 )
 
 type TestToken struct {

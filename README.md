@@ -238,7 +238,7 @@ func restricted(c *fiber.Ctx) error {
 ### RS256 Test
 The RS256 is actually identical to the HS256 test above.
 
-### JWKs Test
+### JWK Set Test
 The tests are identical to basic `JWT` tests above, with exception that `JWKSetURLs` to valid public keys collection in JSON Web Key format should be supplied. See [RFC 7517](https://www.rfc-editor.org/rfc/rfc7517).
 
 ### Custom KeyFunc example

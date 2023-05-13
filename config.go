@@ -133,11 +133,7 @@ func makeCfg(config []Config) (cfg Config) {
 			}
 			if len(cfg.JWKSetURLs) > 0 {
 				var err error
-				if len(cfg.JWKSetURLs) == 1 {
-					cfg.KeyFunc, err = oneKeyfunc(cfg, givenKeys)
-				} else {
-					cfg.KeyFunc, err = multiKeyfunc(givenKeys, cfg.JWKSetURLs)
-				}
+				cfg.KeyFunc, err = multiKeyfunc(givenKeys, cfg.JWKSetURLs)
 				if err != nil {
 					panic("Failed to create keyfunc from JWK Set URL: " + err.Error()) // TODO Don't panic?
 				}
@@ -152,14 +148,6 @@ func makeCfg(config []Config) (cfg Config) {
 	}
 
 	return cfg
-}
-
-func oneKeyfunc(cfg Config, givenKeys map[string]keyfunc.GivenKey) (jwt.Keyfunc, error) {
-	jwks, err := keyfunc.Get(cfg.JWKSetURLs[0], keyfuncOptions(givenKeys))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get JWK Set URL: %w", err)
-	}
-	return jwks.Keyfunc, nil
 }
 
 func multiKeyfunc(givenKeys map[string]keyfunc.GivenKey, jwkSetURLs []string) (jwt.Keyfunc, error) {

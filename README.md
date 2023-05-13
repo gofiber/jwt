@@ -19,7 +19,7 @@ This middleware supports Fiber v1 & v2, install accordingly.
 
 ```
 go get -u github.com/gofiber/fiber/v2
-go get -u github.com/gofiber/jwt/v3
+go get -u github.com/gofiber/jwt/v4
 go get -u github.com/golang-jwt/jwt/v4
 ```
 
@@ -29,27 +29,20 @@ jwtware.New(config ...jwtware.Config) func(*fiber.Ctx) error
 ```
 
 ### Config
-| Property                 | Type                            | Description                                                                                                                                             | Default                      |
-|:-------------------------|:--------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------|
-| Filter                   | `func(*fiber.Ctx) bool`         | Defines a function to skip middleware                                                                                                                   | `nil`                        |
-| SuccessHandler           | `func(*fiber.Ctx) error`        | SuccessHandler defines a function which is executed for a valid token.                                                                                  | `nil`                        |
-| ErrorHandler             | `func(*fiber.Ctx, error) error` | ErrorHandler defines a function which is executed for an invalid token.                                                                                 | `401 Invalid or expired JWT` |
-| SigningKey               | `interface{}`                   | Signing key to validate token. Used as fallback if SigningKeys has length 0.                                                                            | `nil`                        |
-| SigningKeys              | `map[string]interface{}`        | Map of signing keys to validate token with kid field usage.                                                                                             | `nil`                        |
-| SigningMethod            | `string`                        | Signing method, used to check token signing method. Possible values: `HS256`, `HS384`, `HS512`, `ES256`, `ES384`, `ES512`, `RS256`, `RS384`, `RS512`    | `"HS256"`                    |
-| ContextKey               | `string`                        | Context key to store user information from the token into context.                                                                                      | `"user"`                     |
-| Claims                   | `jwt.Claim`                     | Claims are extendable claims data defining token content.                                                                                               | `jwt.MapClaims{}`            |
-| TokenLookup              | `string`                        | TokenLookup is a string in the form of `<source>:<name>` that is used                                                                                   | `"header:Authorization"`     |
-| AuthScheme               | `string`                        | AuthScheme to be used in the Authorization header. The default value (`"Bearer"`) will only be used in conjuction with the default `TokenLookup` value. | `"Bearer"`                   |
-| KeySetURL(deprecated)    | `string`                        | KeySetURL location of JSON file with signing keys.                                                                                                      | `""`                         |
-| KeySetURLs               | `string`                        | KeySetURL locations of JSON file with signing keys.                                                                                                     | `""`                         |
-| KeyRefreshSuccessHandler | `func(j *KeySet)`               | KeyRefreshSuccessHandler defines a function which is executed for a valid refresh of signing keys.                                                      | `nil`                        |
-| KeyRefreshErrorHandler   | `func(j *KeySet, err error)`    | KeyRefreshErrorHandler defines a function which is executed for an invalid refresh of signing keys.                                                     | `nil`                        |
-| KeyRefreshInterval       | `*time.Duration`                | KeyRefreshInterval is the duration to refresh the JWKs in the background via a new HTTP request.                                                        | `nil`                        |
-| KeyRefreshRateLimit      | `*time.Duration`                | KeyRefreshRateLimit limits the rate at which refresh requests are granted.                                                                              | `nil`                        |
-| KeyRefreshTimeout        | `*time.Duration`                | KeyRefreshTimeout is the duration for the context used to create the HTTP request for a refresh of the JWKs.                                            | `1min`                       |
-| KeyRefreshUnknownKID     | `bool`                          | KeyRefreshUnknownKID indicates that the JWKs refresh request will occur every time a kid that isn't cached is seen.                                     | `false`                      |
-| KeyFunc                  | `func() jwt.Keyfunc`            | KeyFunc defines a user-defined function that supplies the public key for a token validation.                                                            | `jwtKeyFunc`                 |
+| Property       | Type                            | Description                                                                                                                                             | Default                      |
+|:---------------|:--------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------|
+| Filter         | `func(*fiber.Ctx) bool`         | Defines a function to skip middleware                                                                                                                   | `nil`                        |
+| SuccessHandler | `func(*fiber.Ctx) error`        | SuccessHandler defines a function which is executed for a valid token.                                                                                  | `nil`                        |
+| ErrorHandler   | `func(*fiber.Ctx, error) error` | ErrorHandler defines a function which is executed for an invalid token.                                                                                 | `401 Invalid or expired JWT` |
+| SigningKey     | `interface{}`                   | Signing key to validate token. Used as fallback if SigningKeys has length 0.                                                                            | `nil`                        |
+| SigningKeys    | `map[string]interface{}`        | Map of signing keys to validate token with kid field usage.                                                                                             | `nil`                        |
+| SigningMethod  | `string`                        | Signing method, used to check token signing method. Possible values: `HS256`, `HS384`, `HS512`, `ES256`, `ES384`, `ES512`, `RS256`, `RS384`, `RS512`    | `"HS256"`                    |
+| ContextKey     | `string`                        | Context key to store user information from the token into context.                                                                                      | `"user"`                     |
+| Claims         | `jwt.Claim`                     | Claims are extendable claims data defining token content.                                                                                               | `jwt.MapClaims{}`            |
+| TokenLookup    | `string`                        | TokenLookup is a string in the form of `<source>:<name>` that is used                                                                                   | `"header:Authorization"`     |
+| AuthScheme     | `string`                        | AuthScheme to be used in the Authorization header. The default value (`"Bearer"`) will only be used in conjuction with the default `TokenLookup` value. | `"Bearer"`                   |
+| KeyFunc        | `func() jwt.Keyfunc`            | KeyFunc defines a user-defined function that supplies the public key for a token validation.                                                            | `jwtKeyFunc`                 |
+| JWKSetURLs     | `[]string`                      | A slice of unique JSON Web Key (JWK) Set URLs to used to parse JWTs.                                                                                    | `nil`                        |
 
 
 ### HS256 Example
@@ -61,7 +54,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	jwtware "github.com/gofiber/jwt/v3"
+	jwtware "github.com/gofiber/jwt/v4"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -160,7 +153,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	jwtware "github.com/gofiber/jwt/v3"
+	jwtware "github.com/gofiber/jwt/v4"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -267,7 +260,7 @@ import (
 	"fmt"
   "github.com/gofiber/fiber/v2"
 
-  jwtware "github.com/gofiber/jwt/v3"
+  jwtware "github.com/gofiber/jwt/v4"
   "github.com/golang-jwt/jwt/v4"
 )
 

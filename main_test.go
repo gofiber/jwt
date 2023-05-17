@@ -119,8 +119,10 @@ func TestJwtFromHeader(t *testing.T) {
 		app := fiber.New()
 
 		app.Use(jwtware.New(jwtware.Config{
-			SigningKey:    []byte(defaultSigningKey),
-			SigningMethod: test.SigningMethod,
+			SigningKey: jwtware.SigningKey{
+				JWTAlg: test.SigningMethod,
+				Key:    []byte(defaultSigningKey),
+			},
 		}))
 
 		app.Get("/ok", func(c *fiber.Ctx) error {
@@ -154,9 +156,11 @@ func TestJwtFromCookie(t *testing.T) {
 		app := fiber.New()
 
 		app.Use(jwtware.New(jwtware.Config{
-			SigningKey:    []byte(defaultSigningKey),
-			SigningMethod: test.SigningMethod,
-			TokenLookup:   "cookie:Token",
+			SigningKey: jwtware.SigningKey{
+				JWTAlg: test.SigningMethod,
+				Key:    []byte(defaultSigningKey),
+			},
+			TokenLookup: "cookie:Token",
 		}))
 
 		app.Get("/ok", func(c *fiber.Ctx) error {

@@ -1,6 +1,7 @@
 package jwtware
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -9,6 +10,11 @@ import (
 	"github.com/MicahParks/keyfunc/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+)
+
+var (
+	// ErrJWTAlg is returned when the JWT header did not contain the expected algorithm.
+	ErrJWTAlg = errors.New("the JWT header did not contain the expected algorithm")
 )
 
 // Config defines the config for JWT middleware
@@ -27,17 +33,14 @@ type Config struct {
 	ErrorHandler fiber.ErrorHandler
 
 	// Signing key to validate token. Used as fallback if SigningKeys has length 0.
-	// Required. This, SigningKeys or KeySetUrl.
-	SigningKey interface{}
+	// At least one of the following is required: KeyFunc, JWKSetURLs, SigningKeys, or SigningKey.
+	// The order of precedence is: KeyFunc, JWKSetURLs, SigningKeys, SigningKey.
+	SigningKey SigningKey
 
 	// Map of signing keys to validate token with kid field usage.
-	// Required. This, SigningKey or KeySetUrl(deprecated) or KeySetUrls.
-	SigningKeys map[string]interface{}
-
-	// Signing method, used to check token signing method.
-	// Optional. Default: "HS256".
-	// Possible values: "HS256", "HS384", "HS512", "ES256", "ES384", "ES512", "RS256", "RS384", "RS512"
-	SigningMethod string
+	// At least one of the following is required: KeyFunc, JWKSetURLs, SigningKeys, or SigningKey.
+	// The order of precedence is: KeyFunc, JWKSetURLs, SigningKeys, SigningKey.
+	SigningKeys map[string]SigningKey
 
 	// Context key to store user information from the token into context.
 	// Optional. Default: "user".
@@ -66,7 +69,8 @@ type Config struct {
 	// Internally, github.com/MicahParks/keyfunc/v2 package is used project defaults. If you need more customization,
 	// you can provide a jwt.Keyfunc using that package or make your own implementation.
 	//
-	// This option is mutually exclusive with and takes precedence over JWKSetURLs, SigningKeys, and SigningKey.
+	// At least one of the following is required: KeyFunc, JWKSetURLs, SigningKeys, or SigningKey.
+	// The order of precedence is: KeyFunc, JWKSetURLs, SigningKeys, SigningKey.
 	KeyFunc jwt.Keyfunc
 
 	// JWKSetURLs is a slice of HTTP URLs that contain the JSON Web Key Set (JWKS) used to verify the signatures of
@@ -79,8 +83,21 @@ type Config struct {
 	//   * Rate limit refreshes to once every 5 minutes.
 	//   * Timeout refreshes after 10 seconds.
 	//
-	// This field is compatible with the SigningKeys field.
+	// At least one of the following is required: KeyFunc, JWKSetURLs, SigningKeys, or SigningKey.
+	// The order of precedence is: KeyFunc, JWKSetURLs, SigningKeys, SigningKey.
 	JWKSetURLs []string
+}
+
+// SigningKey holds information about the recognized cryptographic keys used to sign JWTs by this program.
+type SigningKey struct {
+	// JWTAlg is the algorithm used to sign JWTs. If this value is a non-empty string, this will be checked against the
+	// "alg" value in the JWT header.
+	//
+	// https://www.rfc-editor.org/rfc/rfc7518#section-3.1
+	JWTAlg string
+	// Key is the cryptographic key used to sign JWTs. For supported types, please see
+	// https://github.com/golang-jwt/jwt.
+	Key interface{}
 }
 
 // makeCfg function will check correctness of supplied configuration
@@ -102,11 +119,8 @@ func makeCfg(config []Config) (cfg Config) {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid or expired JWT")
 		}
 	}
-	if cfg.SigningKey == nil && len(cfg.SigningKeys) == 0 && len(cfg.JWKSetURLs) == 0 && cfg.KeyFunc == nil {
-		panic("Fiber: JWT middleware requires at least one signing key or JWK Set URL")
-	}
-	if cfg.SigningMethod == "" && len(cfg.JWKSetURLs) == 0 {
-		cfg.SigningMethod = "HS256"
+	if cfg.SigningKey.Key == nil && len(cfg.SigningKeys) == 0 && len(cfg.JWKSetURLs) == 0 && cfg.KeyFunc == nil {
+		panic("Fiber: JWT middleware configuration: At least one of the following is required: KeyFunc, JWKSetURLs, SigningKeys, or SigningKey.")
 	}
 	if cfg.ContextKey == "" {
 		cfg.ContextKey = "user"
@@ -128,7 +142,9 @@ func makeCfg(config []Config) (cfg Config) {
 			if cfg.SigningKeys != nil {
 				givenKeys = make(map[string]keyfunc.GivenKey, len(cfg.SigningKeys))
 				for kid, key := range cfg.SigningKeys {
-					givenKeys[kid] = keyfunc.NewGivenCustom(key, keyfunc.GivenKeyOptions{}) // TODO User supplied alg?
+					givenKeys[kid] = keyfunc.NewGivenCustom(key, keyfunc.GivenKeyOptions{
+						Algorithm: key.JWTAlg,
+					})
 				}
 			}
 			if len(cfg.JWKSetURLs) > 0 {
@@ -141,9 +157,7 @@ func makeCfg(config []Config) (cfg Config) {
 				cfg.KeyFunc = keyfunc.NewGiven(givenKeys).Keyfunc
 			}
 		} else {
-			cfg.KeyFunc = func(token *jwt.Token) (interface{}, error) {
-				return cfg.SigningKey, nil
-			}
+			cfg.KeyFunc = signingKeyFunc(cfg.SigningKey)
 		}
 	}
 
@@ -200,4 +214,19 @@ func (cfg *Config) getExtractors() []jwtExtractor {
 		}
 	}
 	return extractors
+}
+
+func signingKeyFunc(key SigningKey) jwt.Keyfunc {
+	return func(token *jwt.Token) (interface{}, error) {
+		if key.JWTAlg != "" {
+			alg, ok := token.Header["alg"].(string)
+			if !ok {
+				return nil, fmt.Errorf("unexpected jwt signing method: expected: %q: got: missing or unexpected JSON type", key.JWTAlg)
+			}
+			if alg != key.JWTAlg {
+				return nil, fmt.Errorf("unexpected jwt signing method: expected: %q: got: %q", key.JWTAlg, alg)
+			}
+		}
+		return key.Key, nil
+	}
 }

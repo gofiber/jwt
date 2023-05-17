@@ -36,7 +36,6 @@ jwtware.New(config ...jwtware.Config) func(*fiber.Ctx) error
 | ErrorHandler   | `func(*fiber.Ctx, error) error` | ErrorHandler defines a function which is executed for an invalid token.                                                                                 | `401 Invalid or expired JWT` |
 | SigningKey     | `interface{}`                   | Signing key to validate token. Used as fallback if SigningKeys has length 0.                                                                            | `nil`                        |
 | SigningKeys    | `map[string]interface{}`        | Map of signing keys to validate token with kid field usage.                                                                                             | `nil`                        |
-| SigningMethod  | `string`                        | Signing method, used to check token signing method. Possible values: `HS256`, `HS384`, `HS512`, `ES256`, `ES384`, `ES512`, `RS256`, `RS384`, `RS512`    | `"HS256"`                    |
 | ContextKey     | `string`                        | Context key to store user information from the token into context.                                                                                      | `"user"`                     |
 | Claims         | `jwt.Claim`                     | Claims are extendable claims data defining token content.                                                                                               | `jwt.MapClaims{}`            |
 | TokenLookup    | `string`                        | TokenLookup is a string in the form of `<source>:<name>` that is used                                                                                   | `"header:Authorization"`     |
@@ -69,7 +68,7 @@ func main() {
 
 	// JWT Middleware
 	app.Use(jwtware.New(jwtware.Config{
-		SigningKey: []byte("secret"),
+		SigningKey: SigningKey{Key: []byte("secret")},
 	}))
 
 	// Restricted Routes
@@ -153,8 +152,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	jwtware "github.com/gofiber/jwt/v4"
 	"github.com/golang-jwt/jwt/v5"
+
+	jwtware "github.com/gofiber/jwt/v4"
 )
 
 var (
@@ -183,8 +183,10 @@ func main() {
 
 	// JWT Middleware
 	app.Use(jwtware.New(jwtware.Config{
-		SigningMethod: "RS256",
-		SigningKey:    privateKey.Public(),
+		SigningKey: jwtware.SigningKey{
+			JWTAlg: jwtware.RS256,
+			Key:    privateKey.Public(),
+		},
 	}))
 
 	// Restricted Routes
@@ -232,7 +234,6 @@ func restricted(c *fiber.Ctx) error {
 	name := claims["name"].(string)
 	return c.SendString("Welcome " + name)
 }
-
 ```
 
 ### RS256 Test

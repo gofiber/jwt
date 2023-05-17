@@ -7,6 +7,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+var (
+	// ErrJWTMissingOrMalformed is returned when the JWT is missing or malformed.
+	ErrJWTMissingOrMalformed = errors.New("missing or malformed JWT")
+)
+
 type jwtExtractor func(c *fiber.Ctx) (string, error)
 
 // jwtFromHeader returns a function that extracts token from the request header.
@@ -17,7 +22,7 @@ func jwtFromHeader(header string, authScheme string) func(c *fiber.Ctx) (string,
 		if len(auth) > l+1 && strings.EqualFold(auth[:l], authScheme) {
 			return strings.TrimSpace(auth[l:]), nil
 		}
-		return "", errors.New("Missing or malformed JWT")
+		return "", ErrJWTMissingOrMalformed
 	}
 }
 
@@ -26,7 +31,7 @@ func jwtFromQuery(param string) func(c *fiber.Ctx) (string, error) {
 	return func(c *fiber.Ctx) (string, error) {
 		token := c.Query(param)
 		if token == "" {
-			return "", errors.New("Missing or malformed JWT")
+			return "", ErrJWTMissingOrMalformed
 		}
 		return token, nil
 	}
@@ -37,7 +42,7 @@ func jwtFromParam(param string) func(c *fiber.Ctx) (string, error) {
 	return func(c *fiber.Ctx) (string, error) {
 		token := c.Params(param)
 		if token == "" {
-			return "", errors.New("Missing or malformed JWT")
+			return "", ErrJWTMissingOrMalformed
 		}
 		return token, nil
 	}
@@ -48,7 +53,7 @@ func jwtFromCookie(name string) func(c *fiber.Ctx) (string, error) {
 	return func(c *fiber.Ctx) (string, error) {
 		token := c.Cookies(name)
 		if token == "" {
-			return "", errors.New("Missing or malformed JWT")
+			return "", ErrJWTMissingOrMalformed
 		}
 		return token, nil
 	}

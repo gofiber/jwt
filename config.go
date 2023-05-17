@@ -67,7 +67,7 @@ type Config struct {
 	// you can provide a jwt.Keyfunc using that package or make your own implementation.
 	//
 	// This option is mutually exclusive with and takes precedence over JWKSetURLs, SigningKeys, and SigningKey.
-	KeyFunc jwt.Keyfunc // TODO Could be renamed to Keyfunc
+	KeyFunc jwt.Keyfunc
 
 	// JWKSetURLs is a slice of HTTP URLs that contain the JSON Web Key Set (JWKS) used to verify the signatures of
 	// JWTs. Use of HTTPS is recommended. The presence of the "kid" field in the JWT header and JWKs is mandatory for
@@ -135,7 +135,7 @@ func makeCfg(config []Config) (cfg Config) {
 				var err error
 				cfg.KeyFunc, err = multiKeyfunc(givenKeys, cfg.JWKSetURLs)
 				if err != nil {
-					panic("Failed to create keyfunc from JWK Set URL: " + err.Error()) // TODO Don't panic?
+					panic("Failed to create keyfunc from JWK Set URL: " + err.Error())
 				}
 			} else {
 				cfg.KeyFunc = keyfunc.NewGiven(givenKeys).Keyfunc

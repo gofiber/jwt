@@ -33,16 +33,13 @@ func TestDefaultConfiguration(t *testing.T) {
 
 	// Arrange
 	config := append(make([]Config, 0), Config{
-		SigningKey: "",
+		SigningKey: SigningKey{Key: []byte("")},
 	})
 
 	// Act
 	cfg := makeCfg(config)
 
 	// Assert
-	if cfg.SigningMethod != HS256 {
-		t.Fatalf("Default signing method should be 'HS256'")
-	}
 	if cfg.ContextKey != "user" {
 		t.Fatalf("Default context key should be 'user'")
 	}
@@ -70,7 +67,7 @@ func TestExtractorsInitialization(t *testing.T) {
 
 	// Arrange
 	cfg := Config{
-		SigningKey:  "",
+		SigningKey:  SigningKey{Key: []byte("")},
 		TokenLookup: defaultTokenLookup + ",query:token,param:token,cookie:token,something:something",
 	}
 
@@ -100,7 +97,7 @@ func TestCustomTokenLookup(t *testing.T) {
 	lookup := `header:X-Auth`
 	scheme := "Token"
 	cfg := Config{
-		SigningKey:  "",
+		SigningKey:  SigningKey{Key: []byte("")},
 		TokenLookup: lookup,
 		AuthScheme:  scheme,
 	}

@@ -8,12 +8,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/golang-jwt/jwt/v4"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
+	"github.com/golang-jwt/jwt/v5"
 
-	jwtware "github.com/gofiber/jwt/v3"
+	jwtware "github.com/gofiber/jwt/v4"
 )
 
 type TestToken struct {
@@ -120,8 +119,10 @@ func TestJwtFromHeader(t *testing.T) {
 		app := fiber.New()
 
 		app.Use(jwtware.New(jwtware.Config{
-			SigningKey:    []byte(defaultSigningKey),
-			SigningMethod: test.SigningMethod,
+			SigningKey: jwtware.SigningKey{
+				JWTAlg: test.SigningMethod,
+				Key:    []byte(defaultSigningKey),
+			},
 		}))
 
 		app.Get("/ok", func(c *fiber.Ctx) error {
@@ -155,9 +156,11 @@ func TestJwtFromCookie(t *testing.T) {
 		app := fiber.New()
 
 		app.Use(jwtware.New(jwtware.Config{
-			SigningKey:    []byte(defaultSigningKey),
-			SigningMethod: test.SigningMethod,
-			TokenLookup:   "cookie:Token",
+			SigningKey: jwtware.SigningKey{
+				JWTAlg: test.SigningMethod,
+				Key:    []byte(defaultSigningKey),
+			},
+			TokenLookup: "cookie:Token",
 		}))
 
 		app.Get("/ok", func(c *fiber.Ctx) error {
@@ -216,7 +219,7 @@ func TestJwkFromServer(t *testing.T) {
 		app := fiber.New()
 
 		app.Use(jwtware.New(jwtware.Config{
-			KeySetURL: server.URL + "/jwks.json",
+			JWKSetURLs: []string{server.URL + "/jwks.json"},
 		}))
 
 		app.Get("/ok", func(c *fiber.Ctx) error {
@@ -277,7 +280,7 @@ func TestJwkFromServers(t *testing.T) {
 		app := fiber.New()
 
 		app.Use(jwtware.New(jwtware.Config{
-			KeySetURLs: []string{server.URL + "/jwks.json", server.URL + "/jwks2.json"},
+			JWKSetURLs: []string{server.URL + "/jwks.json", server.URL + "/jwks2.json"},
 		}))
 
 		app.Get("/ok", func(c *fiber.Ctx) error {
@@ -296,7 +299,7 @@ func TestJwkFromServers(t *testing.T) {
 	}
 }
 
-func TestCustomKeyFunc(t *testing.T) {
+func TestCustomKeyfunc(t *testing.T) {
 	t.Parallel()
 
 	defer func() {
@@ -311,7 +314,7 @@ func TestCustomKeyFunc(t *testing.T) {
 	app := fiber.New()
 
 	app.Use(jwtware.New(jwtware.Config{
-		KeyFunc: customKeyFunc(),
+		KeyFunc: customKeyfunc(),
 	}))
 
 	app.Get("/ok", func(c *fiber.Ctx) error {
@@ -329,7 +332,7 @@ func TestCustomKeyFunc(t *testing.T) {
 	utils.AssertEqual(t, 200, resp.StatusCode)
 }
 
-func customKeyFunc() jwt.Keyfunc {
+func customKeyfunc() jwt.Keyfunc {
 	return func(t *jwt.Token) (interface{}, error) {
 		// Always check the signing method
 		if t.Method.Alg() != jwtware.HS256 {

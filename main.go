@@ -7,17 +7,12 @@ package jwtware
 
 import (
 	"reflect"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
-	// defaultRefreshTimeout is the default duration for the context used to create the HTTP request for a refresh of
-	// the JWKs.
-	defaultKeyRefreshTimeout = time.Minute
-
 	defaultTokenLookup = "header:" + fiber.HeaderAuthorization
 )
 

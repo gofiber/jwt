@@ -1,5 +1,5 @@
-github.com/MicahParks/keyfunc/v2 v2.0.2 h1:3gpuVccOhHnJmqbz9VvKpDSYsnUHZdGJsXhmT9HGNgI=
-github.com/MicahParks/keyfunc/v2 v2.0.2/go.mod h1:rW42fi+xgLJ2FRRXAfNx9ZA8WpD4OeE/yHVMteCkw9k=
+github.com/MicahParks/keyfunc/v2 v2.0.3 h1:uKUEOc+knRO0UoucONisgNPiT85V2s/W5c0FQYsd9kc=
+github.com/MicahParks/keyfunc/v2 v2.0.3/go.mod h1:rW42fi+xgLJ2FRRXAfNx9ZA8WpD4OeE/yHVMteCkw9k=
 github.com/andybalholm/brotli v1.0.5 h1:8uQZIdzKmjc/iuPu7O2ioW48L81FgatrcpfFmiq/cCs=
 github.com/andybalholm/brotli v1.0.5/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
 github.com/gofiber/fiber/v2 v2.46.0 h1:wkkWotblsGVlLjXj2dpgKQAYHtXumsK/HyFugQM68Ns=

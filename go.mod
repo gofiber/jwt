@@ -1,3 +1,5 @@
+// Deprecated: Now part of the fiber contrib repo:
+// github.com/gofiber/contrib/jwt
 module github.com/gofiber/jwt/v4
 
 go 1.18
